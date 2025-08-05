@@ -3,16 +3,19 @@ package id.kjlogistik.app.data.session
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import javax.inject.Inject // NEW
+import javax.inject.Inject
 
-class SessionManager @Inject constructor( // ADD @Inject
+class SessionManager @Inject constructor(
     private val context: Context
 ) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     companion object {
         const val PREFS_NAME = "auth_prefs"
-        const val KEY_AUTH_TOKEN = "auth_token"
+        // We will store the access token here, as it's used for API calls
+        const val KEY_AUTH_TOKEN = "access_token"
+        // You might want to store the refresh token separately if you implement token refresh logic
+        // const val KEY_REFRESH_TOKEN = "refresh_token"
     }
 
     fun saveAuthToken(token: String) {
@@ -27,3 +30,4 @@ class SessionManager @Inject constructor( // ADD @Inject
         prefs.edit { remove(KEY_AUTH_TOKEN) }
     }
 }
+

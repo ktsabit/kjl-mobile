@@ -17,13 +17,14 @@ import androidx.compose.ui.unit.dp
 import id.kjlogistik.app.presentation.theme.KJLAppTheme
 import androidx.hilt.navigation.compose.hiltViewModel
 import id.kjlogistik.app.presentation.viewmodels.ScanViewModel
-// Imports for Preview purposes only (remain as before)
+// Imports for Preview purposes only
 import id.kjlogistik.app.data.repository.AuthRepository
 import id.kjlogistik.app.data.api.AuthApiService
 import id.kjlogistik.app.data.model.LoginRequest
 import id.kjlogistik.app.data.model.LoginResponse
-import id.kjlogistik.app.data.model.ScanRequest
-import id.kjlogistik.app.data.model.ScanResponse
+import id.kjlogistik.app.data.model.InboundScanRequest
+import id.kjlogistik.app.data.model.InboundScanResponse
+import id.kjlogistik.app.data.model.UserMeResponse
 import id.kjlogistik.app.data.session.SessionManager
 import retrofit2.Response
 
@@ -40,8 +41,6 @@ fun ScanScreen() {
     LaunchedEffect(uiState.scanSuccessMessage) {
         uiState.scanSuccessMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            // The ViewModel will handle resetting the UI state for the screen after a delay.
-            // Do NOT call scanViewModel.resetScanState() here to avoid immediate flash.
         }
     }
 
@@ -49,8 +48,6 @@ fun ScanScreen() {
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            // The ViewModel will handle resetting the UI state for the screen after a delay.
-            // Do NOT call scanViewModel.resetScanState() here to avoid immediate flash.
         }
     }
 
@@ -68,7 +65,7 @@ fun ScanScreen() {
         ) {
             // Button to trigger QR code scan
             Button(
-                onClick = scanViewModel::startQrCodeScan,
+                onClick = { scanViewModel.startQrCodeScan(isDamaged = false) }, // Defaulting isDamaged to false
                 enabled = !uiState.isLoading, // Disable button while scanning or processing
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,15 +139,36 @@ fun ScanScreenPreview() {
         // Dummy implementations for Preview
         val dummyAuthApiService = object : AuthApiService {
             override suspend fun login(request: LoginRequest): Response<LoginResponse> {
-                return Response.success(LoginResponse("dummy_token", "123", "Preview Login Success"))
+                return Response.success(LoginResponse(refreshToken = "dummy_refresh", accessToken = "dummy_access"))
             }
-            override suspend fun scanQrCode(authToken: String, request: ScanRequest): Response<ScanResponse> {
-                // Simulate success for preview
-                return Response.success(ScanResponse("Package ${request.shippingId} verified (Preview)", "success"))
+
+            // Dummy implementation for getUserMe for preview
+            override suspend fun getUserMe(authToken: String): Response<UserMeResponse> {
+                return Response.success(
+                    UserMeResponse(
+                        id = "preview_user_id",
+                        email = "preview@example.com",
+                        username = "preview_housekeeper",
+                        fullName = "Preview User",
+                        client = null,
+                        hub = "preview_hub_id",
+                        hubName = "Preview Hub",
+                        groups = listOf("Housekeeper")
+                    )
+                )
+            }
+
+            // Dummy implementation for inboundScanPackage for preview
+            override suspend fun inboundScanPackage(
+                authToken: String,
+                request: InboundScanRequest
+            ): Response<InboundScanResponse> {
+                return Response.success(InboundScanResponse("Package ${request.qrCodeContent} verified (Preview)", "success"))
             }
         }
-        val dummyAuthRepository = AuthRepository(dummyAuthApiService)
         val dummySessionManager = SessionManager(LocalContext.current)
+        val dummyAuthRepository = AuthRepository(dummyAuthApiService, dummySessionManager)
+
         // Store a dummy token for preview if needed (e.g., if you have logic depending on token presence)
         LaunchedEffect(Unit) {
             dummySessionManager.saveAuthToken("preview_token_123")

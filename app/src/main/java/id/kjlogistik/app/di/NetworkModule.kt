@@ -1,7 +1,7 @@
 package id.kjlogistik.app.di
 
 import id.kjlogistik.app.data.api.AuthApiService
-import id.kjlogistik.app.data.repository.AuthRepository
+import id.kjlogistik.app.data.repository.AuthRepository // NEW: Import AuthRepository
 import id.kjlogistik.app.data.session.SessionManager
 import dagger.Module
 import dagger.Provides
@@ -12,8 +12,8 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
-import dagger.hilt.android.qualifiers.ApplicationContext // NEW
-import android.content.Context // NEW
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 
 // IMPORTANT: Replace with your actual Cloudflared tunnel URL.
 // This is critical for your physical device to connect.
@@ -27,7 +27,7 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideOkHttpClient(
-        loggingInterceptor: HttpLoggingInterceptor // Inject logging interceptor
+        loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
@@ -36,9 +36,9 @@ object NetworkModule {
 
     @Singleton
     @Provides
-    fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor { // NEW: Provide logging interceptor separately
+    fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY // Log request and response bodies
+            level = HttpLoggingInterceptor.Level.BODY
         }
     }
 
@@ -46,7 +46,7 @@ object NetworkModule {
     @Provides
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BASE_URL) // Use the constant defined above
+            .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -60,14 +60,18 @@ object NetworkModule {
 
     @Singleton
     @Provides
-    fun provideAuthRepository(authApiService: AuthApiService): AuthRepository {
-        return AuthRepository(authApiService)
+    fun provideAuthRepository(
+        authApiService: AuthApiService,
+        sessionManager: SessionManager // NEW: Inject SessionManager
+    ): AuthRepository {
+        return AuthRepository(authApiService, sessionManager) // Pass SessionManager
     }
 
-    // NEW: Provide SessionManager
     @Singleton
     @Provides
     fun provideSessionManager(@ApplicationContext context: Context): SessionManager {
         return SessionManager(context)
     }
 }
+
+

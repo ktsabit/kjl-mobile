@@ -3,16 +3,16 @@ package id.kjlogistik.app.presentation.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import id.kjlogistik.app.data.model.LoginRequest
-import id.kjlogistik.app.data.repository.AuthRepository
-import id.kjlogistik.app.data.repository.Result
-import id.kjlogistik.app.data.session.SessionManager // NEW
+import id.kjlogistik.app.data.repository.AuthRepository // Keep this import for AuthRepository
+// import id.kjlogistik.app.data.repository.Result // REMOVE: This is the problematic import
+import id.kjlogistik.app.data.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import android.util.Log // For debugging
+import android.util.Log
 
 // Represents the UI state of the login screen
 data class LoginUiState(
@@ -21,13 +21,13 @@ data class LoginUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isLoggedIn: Boolean = false,
-    val authToken: String? = null
+    val authToken: String? = null // This will be fetched from SessionManager if needed
 )
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val sessionManager: SessionManager // NEW: Inject SessionManager
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -46,7 +46,7 @@ class LoginViewModel @Inject constructor(
 
         viewModelScope.launch {
             val username = _uiState.value.usernameInput
-            val password = _uiState.value.passwordInput // No need for copy() here, it's a simple string
+            val password = _uiState.value.passwordInput
 
             // Basic validation (you'd expand this)
             if (username.isBlank() || password.isBlank()) {
@@ -58,28 +58,25 @@ class LoginViewModel @Inject constructor(
             }
 
             val request = LoginRequest(username, password)
+            // CORRECTED: Use AuthRepository.LoginResult
             when (val result = authRepository.login(request)) {
-                is Result.Success -> {
-                    val token = result.data.authToken
-                    sessionManager.saveAuthToken(token) // NEW: Save token to session manager
+                is AuthRepository.LoginResult.Success -> {
+                    // Token is saved within AuthRepository, so we fetch it from SessionManager
+                    val token = sessionManager.fetchAuthToken()
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isLoggedIn = true,
-                        authToken = token, // Keep this here for UI observer
+                        authToken = token, // Update UI state with the fetched token
                         errorMessage = null
                     )
-                    Log.d("LoginViewModel", "Login successful! Token saved: $token")
+                    Log.d("LoginViewModel", "Login successful! Message: ${result.message}")
                 }
-                is Result.Error -> {
+                is AuthRepository.LoginResult.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = result.message ?: "An unknown error occurred during login."
+                        errorMessage = result.message // Use the message from the error result
                     )
-                    Log.e("LoginViewModel", "Login failed: ${result.message}", result.exception)
-                }
-                Result.Loading -> {
-                    // This state is handled by setting isLoading to true before the call
-                    // No further action needed here for this specific sealed class setup
+                    Log.e("LoginViewModel", "Login failed: ${result.message}")
                 }
             }
         }

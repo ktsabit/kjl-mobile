@@ -16,32 +16,25 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-// Removed unused imports from here:
-// import id.kjlogistik.app.data.api.AuthApiService
-// import id.kjlogistik.app.data.model.LoginRequest
-// import id.kjlogistik.app.data.model.LoginResponse
-// import id.kjlogistik.app.data.repository.AuthRepository
-import id.kjlogistik.app.presentation.theme.KJLAppTheme // Assuming you have a theme defined
-import androidx.hilt.navigation.compose.hiltViewModel // Import hiltViewModel
 import id.kjlogistik.app.data.api.AuthApiService
 import id.kjlogistik.app.data.model.LoginRequest
 import id.kjlogistik.app.data.model.LoginResponse
-import id.kjlogistik.app.data.model.ScanRequest
-import id.kjlogistik.app.data.model.ScanResponse
+// CORRECTED IMPORTS: Use InboundScanRequest and InboundScanResponse
+import id.kjlogistik.app.data.model.InboundScanRequest
+import id.kjlogistik.app.data.model.InboundScanResponse
+import id.kjlogistik.app.data.model.UserMeResponse
 import id.kjlogistik.app.data.repository.AuthRepository
 import id.kjlogistik.app.data.session.SessionManager
-// Removed androidx.lifecycle.viewmodel.compose.viewModel, as hiltViewModel is used
+import id.kjlogistik.app.presentation.theme.KJLAppTheme
+import androidx.hilt.navigation.compose.hiltViewModel
 import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
 import retrofit2.Response
-
-// Removed retrofit2.Response
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onLoginSuccess: (String) -> Unit, // Callback for successful login
 ) {
-    // Get ViewModel instance using hiltViewModel()
     val loginViewModel: LoginViewModel = hiltViewModel()
     val uiState by loginViewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -50,9 +43,9 @@ fun LoginScreen(
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
             uiState.authToken?.let { token ->
-                Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show() // Keep for immediate user feedback
+                Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
                 onLoginSuccess(token)
-                loginViewModel.resetState() // Reset state after navigation, if appropriate (e.g., to clear password field)
+                loginViewModel.resetState()
             }
         }
     }
@@ -61,9 +54,6 @@ fun LoginScreen(
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            // No need to reset state here, ViewModel handles it after an error, or just show the error.
-            // If you want to clear the error message immediately after showing, add a function in ViewModel
-            // loginViewModel.clearErrorMessage() // Example if you add this
         }
     }
 
@@ -140,30 +130,46 @@ fun LoginScreen(
 @Composable
 fun LoginScreenPreview() {
     KJLAppTheme {
-        // Your current preview setup is fine for simple previews, no changes needed for this part.
-        // It's good that you acknowledge it's a dummy for preview.
         val dummyAuthRepository = AuthRepository(object : AuthApiService {
             override suspend fun login(request: LoginRequest): Response<LoginResponse> {
+                // Simulate a successful login with dummy tokens
                 return Response.success(
                     LoginResponse(
-                        "dummy_token",
-                        "123",
-                        "Preview Login Success"
+                        refreshToken = "dummy_refresh_token_preview",
+                        accessToken = "dummy_access_token_preview"
                     )
                 )
             }
 
-            // NEW: Dummy implementation for scanQrCode for preview
-            override suspend fun scanQrCode(
-                authToken: String,
-                request: ScanRequest
-            ): Response<ScanResponse> {
-                return Response.success(ScanResponse("Preview Scan OK", "success"))
+            // Dummy implementation for getUserMe for preview
+            override suspend fun getUserMe(authToken: String): Response<UserMeResponse> {
+                // Simulate a successful getUserMe response with "Housekeeper" group
+                return Response.success(
+                    UserMeResponse(
+                        id = "preview_user_id",
+                        email = "preview@example.com",
+                        username = "preview_housekeeper",
+                        fullName = "Preview User",
+                        client = null,
+                        hub = "preview_hub_id",
+                        hubName = "Preview Hub",
+                        groups = listOf("Housekeeper") // Crucial for previewing successful login
+                    )
+                )
             }
-        })
+
+            // CORRECTED: Implement inboundScanPackage instead of the old scanQrCode
+            override suspend fun inboundScanPackage(
+                authToken: String,
+                request: InboundScanRequest // Use InboundScanRequest
+            ): Response<InboundScanResponse> { // Use InboundScanResponse
+                return Response.success(InboundScanResponse("Preview Scan OK", "success"))
+            }
+        }, SessionManager(LocalContext.current)) // Pass a dummy SessionManager to AuthRepository
+
         // Mock SessionManager for preview
         val dummySessionManager = SessionManager(LocalContext.current)
-        val previewLoginViewModel = LoginViewModel(dummyAuthRepository, dummySessionManager) // Pass dummy SessionManager
+        val previewLoginViewModel = LoginViewModel(dummyAuthRepository, dummySessionManager)
         LoginScreen(onLoginSuccess = { /* Do nothing in preview */ })
     }
 }

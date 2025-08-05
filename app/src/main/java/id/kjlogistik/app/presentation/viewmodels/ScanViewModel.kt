@@ -1,31 +1,33 @@
 package id.kjlogistik.app.presentation.viewmodels
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanner
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+//import com.google.mlkit.vision.codescanner.GmsBarcodeScannerException // NEW: Import for specific scanner exceptions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import id.kjlogistik.app.data.model.ScanRequest
 import id.kjlogistik.app.data.repository.AuthRepository
-import id.kjlogistik.app.data.repository.Result
 import id.kjlogistik.app.data.session.SessionManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay // For delayed state reset
-import android.util.Log // For debugging
+import kotlinx.coroutines.suspendCancellableCoroutine // NEW: For bridging callbacks to coroutines
 import javax.inject.Inject
+import kotlin.coroutines.resume
 
-// Represents the UI state for the Scan Screen
+// Represents the UI state of the scan screen
 data class ScanUiState(
-    val scannedRawValue: String? = null, // The raw string value from the QR code
-    val isLoading: Boolean = false,      // Indicates if an operation (scan, API call) is in progress
-    val errorMessage: String? = null,    // Message for user on error
-    val scanSuccessMessage: String? = null, // Message for user on successful scan
+    val scannedRawValue: String? = null,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val scanSuccessMessage: String? = null,
     val isScanSuccessful: Boolean? = null // null: initial/reset, true: success, false: failure
 )
 
@@ -33,179 +35,143 @@ data class ScanUiState(
 class ScanViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager,
-    @ApplicationContext private val context: Context // Context is needed for GmsBarcodeScanning.getClient
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    // MutableStateFlow to hold and expose the UI state to Composables
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
 
-    // Configuration for Google ML Kit Barcode Scanner
-    private val options = GmsBarcodeScannerOptions.Builder()
-        .setBarcodeFormats(Barcode.FORMAT_QR_CODE) // Only interested in QR codes
-        .enableAutoZoom() // Enable auto-zoom for better scanning
-        .build()
-
-    // Get an instance of the GMS Barcode Scanner client
-    private val scanner = GmsBarcodeScanning.getClient(context, options)
-
-    /**
-     * Initiates the QR code scanning process using Google ML Kit.
-     * Updates UI state based on scan outcome (success, cancel, failure).
-     */
-    fun startQrCodeScan() {
-        // Reset relevant UI state before starting a new scan
+    // Function to start the QR code scan using ML Kit
+    fun startQrCodeScan(isDamaged: Boolean) {
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             errorMessage = null,
             scanSuccessMessage = null,
-            isScanSuccessful = null, // Clear previous scan result
-            scannedRawValue = null // Clear previous raw value display
+            isScanSuccessful = null,
+            scannedRawValue = null // Clear previous scan value
         )
 
-        scanner.startScan()
-            .addOnSuccessListener { barcode ->
-                val rawValue = barcode.rawValue
-                _uiState.value = _uiState.value.copy(scannedRawValue = rawValue)
-
-                if (!rawValue.isNullOrBlank()) {
-                    scanAndSendToServer(rawValue) // Process and send valid raw value to backend
-                } else {
-                    // Handle case where scanned barcode is empty/null (unlikely for QR but good practice)
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "Scanned barcode is empty.",
-                        isScanSuccessful = false // Indicate scan process failed to get valid data
-                    )
-                    Log.e("ScanViewModel", "Scanned barcode raw value is null or empty.")
-                    delayResetState() // Reset UI after showing message
-                }
-            }
-            .addOnCanceledListener {
-                // User cancelled the scan operation
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Scan cancelled.",
-                    isScanSuccessful = null // Keep it in initial state on cancel
-                )
-                Log.d("ScanViewModel", "QR code scan cancelled by user.")
-            }
-            .addOnFailureListener { e ->
-                // An error occurred during the scan process itself (e.g., camera issue)
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Failed to start scanner: ${e.localizedMessage ?: e.message}",
-                    isScanSuccessful = false // Indicate scanner failure
-                )
-                Log.e("ScanViewModel", "QR code scan failed: ${e.message}", e)
-                delayResetState() // Reset UI after showing message
-            }
-    }
-
-    /**
-     * Parses the raw QR code value and sends the extracted data to the backend.
-     * This function handles the "shpid:batchid" format.
-     */
-    private fun scanAndSendToServer(qrRawValue: String) {
-        val authToken = sessionManager.fetchAuthToken()
-        if (authToken.isNullOrBlank()) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                isScanSuccessful = false,
-                errorMessage = "Authentication token missing. Please log in again."
-            )
-            Log.e("ScanViewModel", "No authentication token found. User likely not logged in or session expired.")
-            delayResetState() // Reset UI after showing message
-            return
-        }
-
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, scanSuccessMessage = null) // Ensure loading state is active
             try {
-                // Parse the "shipping_id:batch_id" format
-                val parts = qrRawValue.split(":")
+                // Configure ML Kit scanner options (e.g., only QR codes)
+                val options = GmsBarcodeScannerOptions.Builder()
+                    .setBarcodeFormats(Barcode.FORMAT_CODE_128)
+                    .build()
+                val scanner = GmsBarcodeScanning.getClient(context, options)
 
-                if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
-                    val shippingIdFromQr = parts[0]
-                    val batchIdFromQr = parts[1]
-
-                    // Create the ScanRequest object.
-                    // IMPORTANT: Ensure the order matches your ScanRequest's constructor
-                    // and its @SerializedName annotations.
-                    // If ScanRequest is (batchId, shippingId) and QR is (shipping:batch),
-                    // then: ScanRequest(batchId = batchIdFromQr, shippingId = shippingIdFromQr)
-                    // Based on your previous example "12jH381w:Je012nb3" (shipping:batch),
-                    // and your ScanRequest data class (@SerializedName("batch_id") val batchId, @SerializedName("shipping_id") val shippingId):
-                    val request = ScanRequest(
-                        batchId = batchIdFromQr,
-                        shippingId = shippingIdFromQr
-                    )
-
-                    // Call the repository to send data to the API
-                    val result = authRepository.scanQrCode(authToken, request)
-
-                    when (result) {
-                        is Result.Success -> {
+                // Use suspendCancellableCoroutine to convert the callback-based ML Kit scan
+                // into a suspend function, making it easier to work with coroutines.
+                val scannedQrCodeContent = suspendCancellableCoroutine<String?> { continuation ->
+                    scanner.startScan()
+                        .addOnSuccessListener { barcode ->
+                            // If scan is successful, resume the coroutine with the raw value
+                            continuation.resume(barcode.rawValue)
+                        }
+                        .addOnFailureListener { e ->
+                            // Handle specific scanner errors and update UI state
+                            val errorMessage = when (e) {
+//                                is GmsBarcodeScannerException -> {
+//                                    when (e.errorCode) {
+//                                        GmsBarcodeScanner.ERROR_CAMERA_PERMISSION_DENIED -> "Camera permission denied. Please grant access in settings."
+//                                        GmsBarcodeScanner.ERROR_SCANNER_NOT_AVAILABLE -> "Barcode scanner not available on this device."
+//                                        else -> "Barcode scanner error: ${e.message ?: "Unknown error"}"
+//                                    }
+//                                }
+                                else -> "Scanner failed: ${e.message ?: "An unexpected error occurred."}"
+                            }
                             _uiState.value = _uiState.value.copy(
                                 isLoading = false,
-                                isScanSuccessful = true,
-                                scanSuccessMessage = result.data.message,
-                                errorMessage = null
+                                errorMessage = errorMessage,
+                                isScanSuccessful = false
                             )
-                            Log.i("ScanViewModel", "Scan successful: ${result.data.message}")
-                            delayResetState() // Schedule UI reset after showing success
+                            // Resume with null to indicate scan failure/cancellation
+                            continuation.resume(null)
                         }
-                        is Result.Error -> {
+                        .addOnCanceledListener {
+                            // Handle scan cancellation (e.g., user pressed back button)
                             _uiState.value = _uiState.value.copy(
                                 isLoading = false,
-                                isScanSuccessful = false,
-                                errorMessage = result.message ?: "Failed to send scan data to server."
+                                errorMessage = "QR code scan cancelled.",
+                                isScanSuccessful = false
                             )
-                            Log.e("ScanViewModel", "Scan API error: ${result.message}", result.exception)
-                            delayResetState() // Schedule UI reset after showing error
+                            // Resume with null to indicate scan cancellation
+                            continuation.resume(null)
                         }
-                        Result.Loading -> {
-                            // This state is managed by isLoading. No specific action needed here.
-                        }
+                }
+
+                // If scanned content is null or blank, it means the scan was cancelled or failed
+                if (scannedQrCodeContent.isNullOrBlank()) {
+                    // If an error message was already set by the failure/cancellation listener,
+                    // we don't need to set a generic one here.
+                    if (_uiState.value.errorMessage == null) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "QR code scan cancelled or no content found.",
+                            isScanSuccessful = false
+                        )
                     }
-                } else {
-                    // QR data is not in the expected "shpid:batchid" format
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        isScanSuccessful = false,
-                        errorMessage = "Invalid QR data format. Expected 'shippingId:batchId'."
-                    )
-                    Log.e("ScanViewModel", "QR data parsing error: Unexpected format. Raw: $qrRawValue")
-                    delayResetState() // Schedule UI reset after showing error
+                    delayResetState() // Reset UI state after showing the message
+                    return@launch // Exit the coroutine
+                }
+
+                _uiState.value = _uiState.value.copy(scannedRawValue = scannedQrCodeContent)
+
+                // Example hub ID (replace with actual logic to get the current hub ID)
+                val currentHubId = "cd98ba56-00af-4c62-9bdb-88d024f9aaaa"
+
+                // Proceed with the API call using the scanned content
+                when (val result = authRepository.inboundScanPackage(
+                    qrCodeContent = scannedQrCodeContent,
+                    isDamaged = isDamaged,
+                    locationHubId = currentHubId
+                )) {
+                    is AuthRepository.ScanResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            scanSuccessMessage = result.message,
+                            isScanSuccessful = true
+                        )
+                        Log.d("ScanViewModel", "Scan successful: ${result.message}")
+                        delayResetState()
+                    }
+                    is AuthRepository.ScanResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = result.message,
+                            isScanSuccessful = false
+                        )
+                        Log.e("ScanViewModel", "Scan failed: ${result.message}")
+                        delayResetState()
+                    }
                 }
             } catch (e: Exception) {
-                // Catch any unexpected exceptions during parsing or API call
+                // Catch any other unexpected exceptions during the entire scan process
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    isScanSuccessful = false,
-                    errorMessage = "An unexpected error occurred: ${e.localizedMessage ?: e.message}"
+                    errorMessage = "Error during scan process: ${e.message ?: "Unknown error"}",
+                    isScanSuccessful = false
                 )
-                Log.e("ScanViewModel", "Unexpected error during scan operation: ${e.message}", e)
-                delayResetState() // Schedule UI reset after showing error
+                Log.e("ScanViewModel", "Exception during scan process: ${e.message}", e)
+                delayResetState()
             }
         }
     }
 
-    /**
-     * Resets the UI state back to its initial/default values.
-     * This is intended for clearing the screen after a result has been displayed.
-     */
-    fun resetScanState() {
-        _uiState.value = ScanUiState()
-    }
-
-    /**
-     * Schedules a delayed reset of the UI state to allow visual feedback to persist.
-     */
+    // Resets the UI state after a short delay to show success/failure message
     private fun delayResetState() {
         viewModelScope.launch {
-            delay(3000L) // Adjust duration (in milliseconds) as per desired visibility
-            _uiState.value = ScanUiState() // Reset state to clear messages/icons
+            delay(3000) // Show success/error for 3 seconds
+            _uiState.value = _uiState.value.copy(
+                scannedRawValue = null,
+                errorMessage = null,
+                scanSuccessMessage = null,
+                isScanSuccessful = null
+            )
         }
+    }
+
+    // You might want a public reset function for external triggers if needed
+    fun resetScanState() {
+        _uiState.value = ScanUiState()
     }
 }
