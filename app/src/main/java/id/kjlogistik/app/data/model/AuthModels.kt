@@ -12,6 +12,11 @@ data class LoginResponse(
     @SerializedName("access") val accessToken: String
 )
 
+data class RefreshRequest(
+    val refresh: String
+)
+
+
 data class ErrorResponse(
     @SerializedName("error") val error: String,
     @SerializedName("message") val message: String? = null

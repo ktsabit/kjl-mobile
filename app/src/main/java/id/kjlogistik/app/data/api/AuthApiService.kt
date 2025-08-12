@@ -1,12 +1,16 @@
 package id.kjlogistik.app.data.api
 
 import id.kjlogistik.app.data.model.*
+import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.*
 
 interface AuthApiService {
     @POST("auth/jwt/create")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+
+    @POST("auth/jwt/refresh/")
+    fun refreshToken(@Body request: RefreshRequest): Call<LoginResponse> // CORRECTED: Now returns Call
 
     @GET("auth/users/me")
     suspend fun getUserMe(

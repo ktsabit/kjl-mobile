@@ -40,8 +40,13 @@ class AuthRepository @Inject constructor(
             if (loginResponse.isSuccessful) {
                 val loginBody = loginResponse.body()
                 val accessToken = loginBody?.accessToken
+                val refreshToken = loginBody?.refreshToken
                 if (accessToken.isNullOrEmpty()) {
                     return LoginResult.Error("Login successful, but no access token received.")
+                }
+
+                if (refreshToken.isNullOrEmpty()) {
+                    return LoginResult.Error("Login successful, but no refresh token received.")
                 }
 
                 val userMeResponse = authApiService.getUserMe("Bearer $accessToken")
@@ -51,7 +56,7 @@ class AuthRepository @Inject constructor(
                     if (userGroups != null) {
                         val allowedGroups = listOf("Housekeeper", "Driver")
                         if (userGroups.any { it in allowedGroups }) {
-                            sessionManager.saveAuthToken(accessToken)
+                            sessionManager.saveAuthToken(accessToken, refreshToken)
                             sessionManager.saveUserGroups(userGroups)
                             val message = if (userGroups.contains("Housekeeper")) {
                                 "Login successful. Welcome, Housekeeper!"
