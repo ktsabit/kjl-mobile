@@ -23,7 +23,7 @@ class SessionManager @Inject constructor(
     }
 
     fun fetchAuthToken(): String? {
-        return prefs.getString(KEY_AUTH_TOKEN, null)
+        return  prefs.getString(KEY_AUTH_TOKEN, null)
     }
 
     fun clearAuthToken() {

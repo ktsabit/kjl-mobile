@@ -16,41 +16,43 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import id.kjlogistik.app.data.api.AuthApiService
-import id.kjlogistik.app.data.model.LoginRequest
-import id.kjlogistik.app.data.model.LoginResponse
-// CORRECTED IMPORTS: Use InboundScanRequest and InboundScanResponse
+import id.kjlogistik.app.data.model.ArrivalScanRequest
+import id.kjlogistik.app.data.model.ArrivalScanResponse
+import id.kjlogistik.app.data.model.DepartureScanRequest
+import id.kjlogistik.app.data.model.DepartureScanResponse
 import id.kjlogistik.app.data.model.InboundScanRequest
 import id.kjlogistik.app.data.model.InboundScanResponse
+import id.kjlogistik.app.data.model.LoginRequest
+import id.kjlogistik.app.data.model.LoginResponse
+import id.kjlogistik.app.data.model.Manifest
 import id.kjlogistik.app.data.model.UserMeResponse
 import id.kjlogistik.app.data.repository.AuthRepository
 import id.kjlogistik.app.data.session.SessionManager
 import id.kjlogistik.app.presentation.theme.KJLAppTheme
-import androidx.hilt.navigation.compose.hiltViewModel
 import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
 import retrofit2.Response
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (String) -> Unit, // Callback for successful login
+    onLoginSuccess: () -> Unit,
 ) {
     val loginViewModel: LoginViewModel = hiltViewModel()
     val uiState by loginViewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    // Observe login success
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
-            uiState.authToken?.let { token ->
+            uiState.authToken?.let {
                 Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
-                onLoginSuccess(token)
+                onLoginSuccess()
                 loginViewModel.resetState()
             }
         }
     }
 
-    // Observe error messages
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -132,44 +134,33 @@ fun LoginScreenPreview() {
     KJLAppTheme {
         val dummyAuthRepository = AuthRepository(object : AuthApiService {
             override suspend fun login(request: LoginRequest): Response<LoginResponse> {
-                // Simulate a successful login with dummy tokens
-                return Response.success(
-                    LoginResponse(
-                        refreshToken = "dummy_refresh_token_preview",
-                        accessToken = "dummy_access_token_preview"
-                    )
-                )
+                return Response.success(LoginResponse(refreshToken = "dummy_refresh", accessToken = "dummy_access"))
             }
 
-            // Dummy implementation for getUserMe for preview
             override suspend fun getUserMe(authToken: String): Response<UserMeResponse> {
-                // Simulate a successful getUserMe response with "Housekeeper" group
-                return Response.success(
-                    UserMeResponse(
-                        id = "preview_user_id",
-                        email = "preview@example.com",
-                        username = "preview_housekeeper",
-                        fullName = "Preview User",
-                        client = null,
-                        hub = "preview_hub_id",
-                        hubName = "Preview Hub",
-                        groups = listOf("Housekeeper") // Crucial for previewing successful login
-                    )
-                )
+                return Response.success(UserMeResponse(id = "preview_id", email = "preview@example.com", username = "preview_housekeeper", fullName = "Preview User", client = null, hub = "preview_hub_id", hubName = "Preview Hub", groups = listOf("Housekeeper")))
             }
 
-            // CORRECTED: Implement inboundScanPackage instead of the old scanQrCode
-            override suspend fun inboundScanPackage(
-                authToken: String,
-                request: InboundScanRequest // Use InboundScanRequest
-            ): Response<InboundScanResponse> { // Use InboundScanResponse
+            override suspend fun pickupScanPackage(authToken: String, request: InboundScanRequest): Response<InboundScanResponse> {
                 return Response.success(InboundScanResponse("Preview Scan OK", "success"))
             }
-        }, SessionManager(LocalContext.current)) // Pass a dummy SessionManager to AuthRepository
 
-        // Mock SessionManager for preview
-        val dummySessionManager = SessionManager(LocalContext.current)
-        val previewLoginViewModel = LoginViewModel(dummyAuthRepository, dummySessionManager)
+            override suspend fun getManifestsForDeparture(authToken: String, status: String): Response<List<Manifest>> {
+                return Response.success(emptyList())
+            }
+
+            override suspend fun departureScanPackage(authToken: String, manifestId: String, request: DepartureScanRequest): Response<DepartureScanResponse> {
+                return Response.success(DepartureScanResponse("Preview Scan OK"))
+            }
+
+            override suspend fun getManifestsForArrival(authToken: String, status: String): Response<List<Manifest>> {
+                return Response.success(emptyList())
+            }
+
+            override suspend fun arrivalScanPackage(authToken: String, manifestId: String, request: ArrivalScanRequest): Response<ArrivalScanResponse> {
+                return Response.success(ArrivalScanResponse("Preview Scan OK"))
+            }
+        }, SessionManager(LocalContext.current))
         LoginScreen(onLoginSuccess = { /* Do nothing in preview */ })
     }
 }

@@ -1,32 +1,28 @@
-package id.kjlogistik.app // <- ENSURE THIS MATCHES YOUR ACTUAL PACKAGE NAME
+package id.kjlogistik.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import id.kjlogistik.app.data.session.SessionManager
-import id.kjlogistik.app.presentation.screens.LoginScreen
-import id.kjlogistik.app.presentation.screens.ScanScreen
+import id.kjlogistik.app.presentation.screens.*
 import id.kjlogistik.app.presentation.theme.KJLAppTheme
-import javax.inject.Inject // Import Inject
+import javax.inject.Inject
 
-// IMPORTANT: BASE_URL is now provided via Hilt's NetworkModule. Remove it from here.
-// const val BASE_URL = "https://your-api-base-url.com/"
-
-@AndroidEntryPoint // Annotate MainActivity for Hilt
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     @Inject
@@ -34,21 +30,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
         setContent {
             KJLAppTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-//                    LoginScreen(
-//                        onLoginSuccess = { authToken ->
-//                            // Use the injected sessionManager to save the token
-//                            sessionManager.saveAuthToken(authToken)
-//                            println("Authentication Token saved by SessionManager: $authToken")
-//                            // TODO: Navigate to your main app content
-//                        }
-//                        // authRepository parameter is no longer needed here, Hilt provides it to ViewModel
-//                    )
-//                    ScanScreen()
                     AppNavigation()
                 }
             }
@@ -60,37 +44,66 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "login_screen") {
+    NavHost(
+        navController = navController,
+        startDestination = "login_screen",
+        enterTransition = { fadeIn() },
+        exitTransition = { fadeOut() }
+    ) {
         composable("login_screen") {
             LoginScreen(
-                onLoginSuccess = { authToken ->
-                    // You can pass the authToken to the next screen if needed,
-                    // but generally, the SessionManager should be the source of truth.
-                    navController.navigate("scan_screen") {
+                onLoginSuccess = {
+                    navController.navigate("main_screen") {
                         popUpTo("login_screen") { inclusive = true }
                     }
                 }
             )
         }
-        composable("scan_screen") {
-            ScanScreen()
+        composable("main_screen") {
+            MainScreen(navController = navController)
         }
-        // Add other routes here
-    }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    KJLAppTheme {
-        // Previews with Hilt are more complex. For simplicity, we'll just show a placeholder
-        // or ensure the preview doesn't rely on Hilt-injected components directly.
-        // A real preview for a Hilt-enabled screen might involve a custom Hilt test rule.
-        // For now, we'll just show the LoginScreen (which has its own preview setup).
-        // If you need to preview MainActivity itself with Hilt, it gets more involved.
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            Text("MainActivity Preview (Hilt setup not shown in preview)")
+        composable("pickup_scan_screen") {
+            PickupScanScreen()
+        }
+        composable("outbound_scan_manifest_list_screen") {
+            OutboundScanManifestListScreen(navController)
+        }
+        composable(
+            "outbound_scan_screen/{manifestId}/{manifestNumber}/{totalPackages}/{scannedPackagesCount}",
+            arguments = listOf(
+                navArgument("manifestId") { type = NavType.StringType },
+                navArgument("manifestNumber") { type = NavType.StringType },
+                navArgument("totalPackages") { type = NavType.IntType },
+                navArgument("scannedPackagesCount") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            OutboundScanScreen(
+                navController = navController,
+                manifestId = backStackEntry.arguments?.getString("manifestId")!!,
+                manifestNumber = backStackEntry.arguments?.getString("manifestNumber")!!,
+                totalPackages = backStackEntry.arguments?.getInt("totalPackages")!!,
+                scannedPackagesCount = backStackEntry.arguments?.getInt("scannedPackagesCount")!!
+            )
+        }
+        composable("inbound_scan_manifest_list_screen") {
+            InboundScanManifestListScreen(navController)
+        }
+        composable(
+            "inbound_scan_screen/{manifestId}/{manifestNumber}/{totalPackages}/{scannedPackagesCount}",
+            arguments = listOf(
+                navArgument("manifestId") { type = NavType.StringType },
+                navArgument("manifestNumber") { type = NavType.StringType },
+                navArgument("totalPackages") { type = NavType.IntType },
+                navArgument("scannedPackagesCount") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            InboundScanScreen(
+                navController = navController,
+                manifestId = backStackEntry.arguments?.getString("manifestId")!!,
+                manifestNumber = backStackEntry.arguments?.getString("manifestNumber")!!,
+                totalPackages = backStackEntry.arguments?.getInt("totalPackages")!!,
+                scannedPackagesCount = backStackEntry.arguments?.getInt("arrivalScannedCount")!!
+            )
         }
     }
 }
