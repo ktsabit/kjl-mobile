@@ -14,10 +14,9 @@ class AuthRepository @Inject constructor(
 ) {
 
     sealed class LoginResult {
-        data class Success(val message: String) : LoginResult()
+        data class Success(val message: String, val groups: List<String>) : LoginResult()
         data class Error(val message: String) : LoginResult()
     }
-
     sealed class ScanResult {
         data class Success(val message: String) : ScanResult()
         data class Error(val message: String) : ScanResult()
@@ -33,6 +32,8 @@ class AuthRepository @Inject constructor(
         data class Error(val message: String) : ManifestScanResult()
     }
 
+
+
     suspend fun login(request: LoginRequest): LoginResult {
         try {
             val loginResponse = authApiService.login(request)
@@ -47,9 +48,21 @@ class AuthRepository @Inject constructor(
                 if (userMeResponse.isSuccessful) {
                     val userMeBody = userMeResponse.body()
                     val userGroups = userMeBody?.groups
-                    if (userGroups != null && userGroups.contains("Housekeeper")) {
-                        sessionManager.saveAuthToken(accessToken)
-                        return LoginResult.Success("Login successful. Welcome, Housekeeper!")
+                    if (userGroups != null) {
+                        val allowedGroups = listOf("Housekeeper", "Driver")
+                        if (userGroups.any { it in allowedGroups }) {
+                            sessionManager.saveAuthToken(accessToken)
+                            sessionManager.saveUserGroups(userGroups)
+                            val message = if (userGroups.contains("Housekeeper")) {
+                                "Login successful. Welcome, Housekeeper!"
+                            } else {
+                                "Login successful. Welcome, Driver!"
+                            }
+                            return LoginResult.Success(message, userGroups) // Pass userGroups back
+                        } else {
+                            sessionManager.clearAuthToken()
+                            return LoginResult.Error("Access denied: User is not a Housekeeper or Driver.")
+                        }
                     } else {
                         sessionManager.clearAuthToken()
                         return LoginResult.Error("Access denied: User is not a Housekeeper.")

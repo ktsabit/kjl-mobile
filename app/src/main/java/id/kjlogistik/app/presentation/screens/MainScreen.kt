@@ -1,27 +1,49 @@
 package id.kjlogistik.app.presentation.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import id.kjlogistik.app.data.session.SessionManager
 import id.kjlogistik.app.presentation.theme.KJLAppTheme
+import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    navController: NavController
+    navController: NavController,
+    sessionManager: SessionManager = hiltViewModel<LoginViewModel>().sessionManager
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("KJL App", style = MaterialTheme.typography.titleLarge) }
+                title = { Text("KJL App", style = MaterialTheme.typography.titleLarge) },
+                actions = {
+                    IconButton(onClick = {
+                        // Clear the token and navigate back to the login screen
+                        sessionManager.clearAuthToken()
+                        navController.navigate("login_screen") {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp, // You will need to import this
+                            contentDescription = "Logout"
+                        )
+                    }
+                }
             )
         }
+
     ) { paddingValues ->
         Column(
             modifier = Modifier

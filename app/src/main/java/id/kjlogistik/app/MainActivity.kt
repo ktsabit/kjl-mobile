@@ -11,6 +11,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,6 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import id.kjlogistik.app.data.session.SessionManager
 import id.kjlogistik.app.presentation.screens.*
 import id.kjlogistik.app.presentation.theme.KJLAppTheme
+import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -39,28 +42,66 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    // Retrieve the sessionManager instance that was injected into MainActivity
+    val sessionManager: SessionManager = hiltViewModel<LoginViewModel>().sessionManager
+
+    val authToken = sessionManager.fetchAuthToken()
+    val userGroups = sessionManager.fetchUserGroups()
+
+
+    val startDestination = if (authToken != null && userGroups.isNotEmpty()) {
+        if (userGroups.contains("Driver")) {
+            "driver_main_screen"
+        } else {
+            "main_screen"
+        }
+    } else {
+        "login_screen"
+    }
+
 
     NavHost(
         navController = navController,
-        startDestination = "login_screen",
+        startDestination = startDestination,
         enterTransition = { fadeIn() },
         exitTransition = { fadeOut() }
     ) {
+//        composable("login_screen") {
+//            LoginScreen(
+//                onLoginSuccess = {
+//                    navController.navigate("main_screen") {
+//                        popUpTo("login_screen") { inclusive = true }
+//                    }
+//                }
+//            )
+//        }
         composable("login_screen") {
             LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate("main_screen") {
+                onLoginSuccess = { userGroups ->
+                    val destination = if (userGroups.contains("Driver")) {
+                        "driver_main_screen"
+                    } else {
+                        "main_screen"
+                    }
+                    navController.navigate(destination) {
                         popUpTo("login_screen") { inclusive = true }
                     }
                 }
             )
         }
+
+//        composable("main_screen") {
+//            MainScreen(navController = navController)
+//        }
+
         composable("main_screen") {
-            MainScreen(navController = navController)
+            MainScreen(navController = navController, sessionManager = sessionManager)
+        }
+        composable("driver_main_screen") {
+            DriverMainScreen(navController = navController, sessionManager = sessionManager)
         }
         composable("pickup_scan_screen") {
             PickupScanScreen()

@@ -19,13 +19,15 @@ data class LoginUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isLoggedIn: Boolean = false,
-    val authToken: String? = null
+    val authToken: String? = null,
+    val userGroups: List<String> = emptyList()
 )
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val sessionManager: SessionManager
+    val sessionManager: SessionManager,
+
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -61,7 +63,8 @@ class LoginViewModel @Inject constructor(
                         isLoading = false,
                         isLoggedIn = true,
                         authToken = token,
-                        errorMessage = null
+                        errorMessage = null,
+                        userGroups = result.groups,
                     )
                     Log.d("LoginViewModel", "Login successful! Message: ${result.message}")
                 }

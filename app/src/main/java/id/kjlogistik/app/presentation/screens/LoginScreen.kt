@@ -37,8 +37,8 @@ import retrofit2.Response
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-) {
+    onLoginSuccess: (userGroups: List<String>) -> Unit,
+    ) {
     val loginViewModel: LoginViewModel = hiltViewModel()
     val uiState by loginViewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -47,7 +47,7 @@ fun LoginScreen(
         if (uiState.isLoggedIn) {
             uiState.authToken?.let {
                 Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
-                onLoginSuccess()
+                onLoginSuccess(uiState.userGroups)
                 loginViewModel.resetState()
             }
         }
