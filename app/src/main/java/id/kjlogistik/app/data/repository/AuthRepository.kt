@@ -127,12 +127,22 @@ class AuthRepository @Inject constructor(
             return ManifestListResult.Error("Authentication token not found. Please log in.")
         }
         return try {
-            val response = authApiService.getManifestsForDeparture("Bearer $authToken", "PENDING_DEPARTURE_SCAN")
-            if (response.isSuccessful) {
-                ManifestListResult.Success(response.body() ?: emptyList())
+            val userMeResponse = getUserMe("Bearer $authToken")
+            if (userMeResponse.isSuccessful) {
+                val hubId = userMeResponse.body()?.hub
+                if (hubId != null) {
+                    val response = authApiService.getManifestsForDeparture("Bearer $authToken", "PENDING_DEPARTURE_SCAN", hubId)
+                    if (response.isSuccessful) {
+                        ManifestListResult.Success(response.body()?.results ?: emptyList())
+                    } else {
+                        val errorBody = response.errorBody()?.string()
+                        ManifestListResult.Error("Failed to fetch manifests: ${errorBody ?: response.message()}")
+                    }
+                } else {
+                    ManifestListResult.Error("Hub ID not found for the user.")
+                }
             } else {
-                val errorBody = response.errorBody()?.string()
-                ManifestListResult.Error("Failed to fetch manifests: ${errorBody ?: response.message()}")
+                ManifestListResult.Error("Failed to fetch user details.")
             }
         } catch (e: Exception) {
             ManifestListResult.Error("An error occurred: ${e.message}")
@@ -164,12 +174,22 @@ class AuthRepository @Inject constructor(
             return ManifestListResult.Error("Authentication token not found. Please log in.")
         }
         return try {
-            val response = authApiService.getManifestsForArrival("Bearer $authToken", "IN_TRANSIT")
-            if (response.isSuccessful) {
-                ManifestListResult.Success(response.body() ?: emptyList())
+            val userMeResponse = getUserMe("Bearer $authToken")
+            if (userMeResponse.isSuccessful) {
+                val hubId = userMeResponse.body()?.hub
+                if (hubId != null) {
+                    val response = authApiService.getManifestsForArrival("Bearer $authToken", "IN_TRANSIT", hubId)
+                    if (response.isSuccessful) {
+                        ManifestListResult.Success(response.body()?.results ?: emptyList())
+                    } else {
+                        val errorBody = response.errorBody()?.string()
+                        ManifestListResult.Error("Failed to fetch manifests: ${errorBody ?: response.message()}")
+                    }
+                } else {
+                    ManifestListResult.Error("Hub ID not found for the user.")
+                }
             } else {
-                val errorBody = response.errorBody()?.string()
-                ManifestListResult.Error("Failed to fetch manifests: ${errorBody ?: response.message()}")
+                ManifestListResult.Error("Failed to fetch user details.")
             }
         } catch (e: Exception) {
             ManifestListResult.Error("An error occurred: ${e.message}")

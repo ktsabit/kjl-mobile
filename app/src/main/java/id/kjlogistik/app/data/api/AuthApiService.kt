@@ -26,8 +26,9 @@ interface AuthApiService {
     @GET("api/manifests/")
     suspend fun getManifestsForDeparture(
         @Header("Authorization") authToken: String,
-        @Query("status") status: String
-    ): Response<List<Manifest>>
+        @Query("status") status: String,
+        @Query("origin_hub") hubId: String
+    ): Response<PaginatedManifestResponse>
 
     @POST("api/manifests/{id}/departure-scan/")
     suspend fun departureScanPackage(
@@ -39,8 +40,9 @@ interface AuthApiService {
     @GET("api/manifests/")
     suspend fun getManifestsForArrival(
         @Header("Authorization") authToken: String,
-        @Query("status") status: String
-    ): Response<List<Manifest>>
+        @Query("status") status: String,
+        @Query("destination_hub") hubId: String
+    ): Response<PaginatedManifestResponse>
 
     @POST("api/manifests/{id}/arrival-scan/")
     suspend fun arrivalScanPackage(

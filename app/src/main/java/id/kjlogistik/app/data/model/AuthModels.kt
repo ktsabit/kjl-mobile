@@ -55,6 +55,13 @@ data class Manifest(
     @SerializedName("waybills") val waybills: List<Waybill>? = null
 )
 
+data class PaginatedManifestResponse(
+    @SerializedName("count") val count: Int,
+    @SerializedName("next") val next: String?,
+    @SerializedName("previous") val previous: String?,
+    @SerializedName("results") val results: List<Manifest>
+)
+
 data class Waybill(
     @SerializedName("waybill_number") val waybillNumber: String,
     @SerializedName("packages_qty") val packagesQty: Int
