@@ -1,4 +1,4 @@
-package id.kjlogistik.app.presentation.screens
+package id.kjlogistik.app.presentation.screens.warehouse
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells

@@ -1,4 +1,4 @@
-package id.kjlogistik.app.presentation.viewmodels
+package id.kjlogistik.app.presentation.viewmodels.warehouse
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,24 +11,24 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class InboundScanUiState(
+data class OutboundScanUiState(
     val manifests: List<Manifest> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
 
 @HiltViewModel
-class InboundScanViewModel @Inject constructor(
+class OutboundScanViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(InboundScanUiState())
-    val uiState: StateFlow<InboundScanUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(OutboundScanUiState())
+    val uiState: StateFlow<OutboundScanUiState> = _uiState.asStateFlow()
 
-    fun fetchArrivalManifests() {
+    fun fetchDepartureManifests() {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
         viewModelScope.launch {
-            when (val result = authRepository.getManifestsForArrival()) {
+            when (val result = authRepository.getManifestsForDeparture()) {
                 is AuthRepository.ManifestListResult.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

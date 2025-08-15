@@ -1,4 +1,4 @@
-package id.kjlogistik.app.presentation.viewmodels
+package id.kjlogistik.app.presentation.viewmodels.warehouse
 
 import android.content.Context
 import android.util.Log

@@ -1,4 +1,4 @@
-package id.kjlogistik.app.presentation.screens
+package id.kjlogistik.app.presentation.screens.warehouse
 
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
@@ -18,7 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import id.kjlogistik.app.presentation.viewmodels.PickupScanViewModel
+import id.kjlogistik.app.presentation.viewmodels.warehouse.PickupScanViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

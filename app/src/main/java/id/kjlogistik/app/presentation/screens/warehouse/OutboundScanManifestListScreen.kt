@@ -1,4 +1,4 @@
-package id.kjlogistik.app.presentation.screens
+package id.kjlogistik.app.presentation.screens.warehouse
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import id.kjlogistik.app.presentation.components.ManifestListItem
-import id.kjlogistik.app.presentation.viewmodels.OutboundScanViewModel // Change to InboundScanViewModel for the other screen
+import id.kjlogistik.app.presentation.viewmodels.warehouse.OutboundScanViewModel // Change to InboundScanViewModel for the other screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

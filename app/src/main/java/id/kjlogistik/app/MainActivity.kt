@@ -10,9 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
-import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,6 +19,12 @@ import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import id.kjlogistik.app.data.session.SessionManager
 import id.kjlogistik.app.presentation.screens.*
+import id.kjlogistik.app.presentation.screens.warehouse.InboundScanManifestListScreen
+import id.kjlogistik.app.presentation.screens.warehouse.InboundScanScreen
+import id.kjlogistik.app.presentation.screens.warehouse.MainScreen
+import id.kjlogistik.app.presentation.screens.warehouse.OutboundScanManifestListScreen
+import id.kjlogistik.app.presentation.screens.warehouse.OutboundScanScreen
+import id.kjlogistik.app.presentation.screens.warehouse.PickupScanScreen
 import id.kjlogistik.app.presentation.theme.KJLAppTheme
 import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
 import javax.inject.Inject

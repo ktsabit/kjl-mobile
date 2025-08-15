@@ -1,4 +1,4 @@
-package id.kjlogistik.app.presentation.screens
+package id.kjlogistik.app.presentation.screens.warehouse
 
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
-import id.kjlogistik.app.presentation.viewmodels.OutboundScanPackageViewModel // Change ViewModel for the other screen
+import id.kjlogistik.app.presentation.viewmodels.warehouse.OutboundScanPackageViewModel // Change ViewModel for the other screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

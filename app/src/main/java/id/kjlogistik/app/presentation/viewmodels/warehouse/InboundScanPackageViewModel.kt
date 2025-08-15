@@ -1,4 +1,4 @@
-package id.kjlogistik.app.presentation.viewmodels
+package id.kjlogistik.app.presentation.viewmodels.warehouse
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class OutboundScanPackageUiState(
+data class InboundScanPackageUiState(
     val manifestId: String = "",
     val manifestNumber: String = "",
     val totalPackages: Int = 0,
@@ -22,11 +22,11 @@ data class OutboundScanPackageUiState(
 )
 
 @HiltViewModel
-class OutboundScanPackageViewModel @Inject constructor(
+class InboundScanPackageViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(OutboundScanPackageUiState())
-    val uiState: StateFlow<OutboundScanPackageUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(InboundScanPackageUiState())
+    val uiState: StateFlow<InboundScanPackageUiState> = _uiState.asStateFlow()
 
     fun setManifestDetails(manifestId: String, manifestNumber: String, totalPackages: Int, scannedPackagesCount: Int) {
         _uiState.value = _uiState.value.copy(
@@ -45,7 +45,7 @@ class OutboundScanPackageViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = authRepository.departureScanPackage(
+            when (val result = authRepository.arrivalScanPackage(
                 manifestId = _uiState.value.manifestId,
                 qrCodeContent = qrCodeContent
             )) {
@@ -54,11 +54,11 @@ class OutboundScanPackageViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         isScanning = false,
                         scannedPackagesCount = newCount,
-                        scanSuccessMessage = result.message
+                        scanSuccessMessage = "Waybill Complete"
                     )
                     if (newCount == _uiState.value.totalPackages) {
                         _uiState.value = _uiState.value.copy(
-                            finalAlertMessage = "Manifest Departed Successfully!",
+                            finalAlertMessage = "Manifest Received Successfully!",
                             scanSuccessMessage = null
                         )
                     }
