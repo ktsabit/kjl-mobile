@@ -1,4 +1,4 @@
-package id.kjlogistik.app.presentation.viewmodels
+package id.kjlogistik.app.presentation.viewmodels.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

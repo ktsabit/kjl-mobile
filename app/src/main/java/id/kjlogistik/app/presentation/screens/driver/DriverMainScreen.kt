@@ -1,6 +1,6 @@
 // file: app/src/main/java/id/kjlogistik/app/presentation/screens/DriverMainScreen.kt
 
-package id.kjlogistik.app.presentation.screens
+package id.kjlogistik.app.presentation.screens.driver
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -15,13 +15,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import id.kjlogistik.app.data.session.SessionManager
-import id.kjlogistik.app.presentation.theme.KJLAppTheme
-import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
+import id.kjlogistik.app.presentation.viewmodels.auth.LoginViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 

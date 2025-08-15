@@ -18,7 +18,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import id.kjlogistik.app.data.session.SessionManager
-import id.kjlogistik.app.presentation.screens.*
+import id.kjlogistik.app.presentation.screens.auth.LoginScreen
+import id.kjlogistik.app.presentation.screens.driver.DriverMainScreen
 import id.kjlogistik.app.presentation.screens.warehouse.InboundScanManifestListScreen
 import id.kjlogistik.app.presentation.screens.warehouse.InboundScanScreen
 import id.kjlogistik.app.presentation.screens.warehouse.MainScreen
@@ -26,7 +27,7 @@ import id.kjlogistik.app.presentation.screens.warehouse.OutboundScanManifestList
 import id.kjlogistik.app.presentation.screens.warehouse.OutboundScanScreen
 import id.kjlogistik.app.presentation.screens.warehouse.PickupScanScreen
 import id.kjlogistik.app.presentation.theme.KJLAppTheme
-import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
+import id.kjlogistik.app.presentation.viewmodels.auth.LoginViewModel
 import javax.inject.Inject
 
 @AndroidEntryPoint

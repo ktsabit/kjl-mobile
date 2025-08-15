@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import id.kjlogistik.app.data.session.SessionManager
-import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
+import id.kjlogistik.app.presentation.viewmodels.auth.LoginViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

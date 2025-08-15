@@ -1,4 +1,4 @@
-package id.kjlogistik.app.presentation.screens
+package id.kjlogistik.app.presentation.screens.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -21,7 +21,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
+import id.kjlogistik.app.presentation.viewmodels.auth.LoginViewModel
 
 @Composable
 fun LoginScreen(
