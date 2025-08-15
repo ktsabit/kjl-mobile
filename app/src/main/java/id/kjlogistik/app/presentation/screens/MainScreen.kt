@@ -1,20 +1,24 @@
 package id.kjlogistik.app.presentation.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import id.kjlogistik.app.data.session.SessionManager
-import id.kjlogistik.app.presentation.theme.KJLAppTheme
 import id.kjlogistik.app.presentation.viewmodels.LoginViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,74 +27,77 @@ fun MainScreen(
     navController: NavController,
     sessionManager: SessionManager = hiltViewModel<LoginViewModel>().sessionManager
 ) {
+    val menuItems = listOf(
+        ScanMenuItem("Pickup Scan", Icons.Default.QrCodeScanner, "pickup_scan_screen"),
+        ScanMenuItem("Outbound Scan", Icons.Default.ArrowUpward, "outbound_scan_manifest_list_screen"),
+        ScanMenuItem("Inbound Scan", Icons.Default.ArrowDownward, "inbound_scan_manifest_list_screen")
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("KJL App", style = MaterialTheme.typography.titleLarge) },
+                title = { Text("Warehouse Dashboard") },
                 actions = {
                     IconButton(onClick = {
-                        // Clear the token and navigate back to the login screen
                         sessionManager.clearAuthToken()
                         navController.navigate("login_screen") {
                             popUpTo(navController.graph.startDestinationId) { inclusive = true }
                         }
                     }) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp, // You will need to import this
-                            contentDescription = "Logout"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
                     }
                 }
             )
         }
-
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-//            Text(
-//                text = "Select a Scan Type",
-//                style = MaterialTheme.typography.headlineLarge,
-//                color = MaterialTheme.colorScheme.primary,
-//                modifier = Modifier.padding(bottom = 32.dp)
-//            )
-            ScanMenuButton(text = "Pickup Scan") {
-                navController.navigate("pickup_scan_screen")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            ScanMenuButton(text = "Outbound Scan (Departure)") {
-                navController.navigate("outbound_scan_manifest_list_screen")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            ScanMenuButton(text = "Inbound Scan (Arrival)") {
-                navController.navigate("inbound_scan_manifest_list_screen")
+            items(menuItems) { item ->
+                ScanMenuCard(
+                    title = item.title,
+                    icon = item.icon,
+                    onClick = { navController.navigate(item.route) }
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScanMenuButton(text: String, onClick: () -> Unit) {
-    Button(
+private fun ScanMenuCard(title: String, icon: ImageVector, onClick: () -> Unit) {
+    Card(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(72.dp),
-        contentPadding = PaddingValues(16.dp),
+        modifier = Modifier.aspectRatio(1f),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
     ) {
-        Text(text, style = MaterialTheme.typography.titleLarge)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    KJLAppTheme {
-        MainScreen(rememberNavController())
-    }
-}
+private data class ScanMenuItem(val title: String, val icon: ImageVector, val route: String)

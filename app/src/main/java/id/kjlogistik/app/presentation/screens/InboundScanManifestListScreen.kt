@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,65 +14,70 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import id.kjlogistik.app.presentation.components.ManifestListItem
 import id.kjlogistik.app.presentation.viewmodels.InboundScanViewModel
+import id.kjlogistik.app.presentation.viewmodels.OutboundScanViewModel // Change to InboundScanViewModel for the other screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InboundScanManifestListScreen(
+fun InboundScanManifestListScreen( // Change function name for the other screen
     navController: NavController,
-    viewModel: InboundScanViewModel = hiltViewModel()
+    viewModel: InboundScanViewModel = hiltViewModel() // Change ViewModel for the other screen
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.fetchArrivalManifests()
+        viewModel.fetchArrivalManifests() // Change function call for the other screen
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Inbound Scan") },
+                title = { Text("Select Arriving Manifest") }, // Change title for the other screen
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
         ) {
-            Text("Select Manifest for Arrival", style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(16.dp))
-
             when {
                 uiState.isLoading -> {
-                    CircularProgressIndicator()
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
                 uiState.errorMessage != null -> {
-                    Text(text = uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
+                        Text(text = uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    }
                 }
                 uiState.manifests.isNotEmpty() -> {
-                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp), // <-- FIXES THE SHADOW ISSUE
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         items(uiState.manifests) { manifest ->
                             ManifestListItem(manifest) {
+                                // Your navigation logic remains the same
                                 navController.navigate(
-                                    "inbound_scan_screen/" +
+                                    "inbound_scan_screen/" + // Change route for the other screen
                                             "${manifest.id}/" +
                                             "${manifest.manifestNumber}/" +
                                             "${manifest.totalPackages}/" +
-                                            "${manifest.scannedPackagesCount}"
+                                            "${manifest.arrivalScannedCount}" // Use correct count
                                 )
                             }
                         }
                     }
                 }
                 else -> {
-                    Text("No arrived manifests found.", style = MaterialTheme.typography.bodyMedium)
+                    Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
+                        Text("No pending manifests found.", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         }

@@ -104,7 +104,7 @@ fun AppNavigation() {
             DriverMainScreen(navController = navController, sessionManager = sessionManager)
         }
         composable("pickup_scan_screen") {
-            PickupScanScreen()
+            PickupScanScreen(navController = navController)
         }
         composable("outbound_scan_manifest_list_screen") {
             OutboundScanManifestListScreen(navController)

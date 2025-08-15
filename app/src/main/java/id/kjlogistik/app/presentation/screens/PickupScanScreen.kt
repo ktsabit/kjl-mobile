@@ -1,115 +1,87 @@
 package id.kjlogistik.app.presentation.screens
 
 import android.widget.Toast
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
-import id.kjlogistik.app.presentation.theme.KJLAppTheme
+import androidx.navigation.NavController
 import id.kjlogistik.app.presentation.viewmodels.PickupScanViewModel
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PickupScanScreen() {
+fun PickupScanScreen(navController: NavController) { // Added NavController
     val scanViewModel: PickupScanViewModel = hiltViewModel()
     val uiState by scanViewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(uiState.scanSuccessMessage) {
-        uiState.scanSuccessMessage?.let { message ->
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-        }
+    // This makes sure toasts don't linger or fire unnecessarily
+    LaunchedEffect(uiState.scanSuccessMessage, uiState.errorMessage) {
+        uiState.scanSuccessMessage?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+        uiState.errorMessage?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
     }
 
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let { message ->
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-        }
-    }
-
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Pickup Scan") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) { // Navigation back
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { scanViewModel.startQrCodeScan(isDamaged = false) },
+                modifier = Modifier.navigationBarsPadding()
+            ) {
+                Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan Barcode")
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .padding(24.dp)
-                .imePadding(),
+                .animateContentSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "Pickup Scan",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            Button(
-                onClick = { scanViewModel.startQrCodeScan(isDamaged = false) },
-                enabled = !uiState.isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-            ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
-                } else {
-                    Text("Scan Barcode")
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.size(64.dp))
+                    Text("Scanning...", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp))
                 }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text("Raw Value:", style = MaterialTheme.typography.titleSmall)
-            Text(uiState.scannedRawValue ?: "N/A", style = MaterialTheme.typography.bodySmall)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            when (uiState.isScanSuccessful) {
-                true -> {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Scan Success",
-                        tint = Color.Green,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Text(
-                        uiState.scanSuccessMessage ?: "Scan OK.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Green
-                    )
+                uiState.isScanSuccessful == true -> {
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Success", tint = Color(0xFF2E7D32), modifier = Modifier.size(80.dp))
+                    Text("Success", style = MaterialTheme.typography.headlineMedium, color = Color(0xFF2E7D32), modifier = Modifier.padding(top = 16.dp))
+                    Text(uiState.scannedRawValue ?: "", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
                 }
-                false -> {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = "Scan Failed",
-                        tint = Color.Red,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Text(
-                        uiState.errorMessage ?: "Scan failed.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Red
-                    )
+                uiState.isScanSuccessful == false -> {
+                    Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(80.dp))
+                    Text("Scan Failed", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 16.dp))
+                    Text(uiState.errorMessage ?: "An unknown error occurred.", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
                 }
-                null -> {
-                    Text(
-                        uiState.errorMessage ?: "Scan a barcode first.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                else -> {
+                    Icon(Icons.Default.QrCodeScanner, contentDescription = "Ready to scan", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(80.dp))
+                    Text("Ready to Scan", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 16.dp))
+                    Text("Press the button below to start scanning.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
                 }
             }
         }
