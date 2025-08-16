@@ -11,6 +11,15 @@ data class PaginatedManifestResponse(
     @SerializedName("results") val results: List<Manifest>
 )
 
+// NEW DATA CLASS FOR THE CORRECT WAYBILL ENDPOINT
+data class PaginatedWaybillResponse(
+    @SerializedName("count") val count: Int,
+    @SerializedName("next") val next: String?,
+    @SerializedName("previous") val previous: String?,
+    @SerializedName("results") val results: List<Waybill>
+)
+
+
 data class LoginRequest(
     val username: String,
     val password: String
@@ -31,8 +40,9 @@ data class UserMeResponse(
     @SerializedName("groups") val groups: List<String>
 )
 
-// --- Nested Data Structures from Manifest ---
+// --- Nested Data Structures ---
 
+// MANIFEST IS NOW CORRECTED - NO LONGER CONTAINS A WAYBILLS LIST
 data class Manifest(
     @SerializedName("id") val id: String,
     @SerializedName("manifest_number") val manifestNumber: String,
@@ -47,24 +57,70 @@ data class Manifest(
 data class Hub(
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
-    @SerializedName("city") val city: String?, // Assuming city might be directly in hub object based on context
+    @SerializedName("city") val city: String?,
     @SerializedName("address") val address: Address
+)
+
+data class Waybill(
+    @SerializedName("id")
+    val id: String,
+
+    @SerializedName("waybill_number")
+    val waybillNumber: String?,
+
+    @SerializedName("packages_qty")
+    val packagesQty: Int,
+
+    @SerializedName("recipient")
+    val recipient: Recipient,
+
+    @SerializedName("client")
+    val client: Client,
+
+    @SerializedName("packages")
+    val packages: List<PackageInfo>
+)
+
+data class Recipient(
+    @SerializedName("name")
+    val name: String,
+
+    @SerializedName("phone_number")
+    val phoneNumber: String,
+
+    @SerializedName("address")
+    val address: Address
+)
+
+data class Client(
+    @SerializedName("name")
+    val name: String,
+
+    @SerializedName("code")
+    val code: String
+)
+
+data class PackageInfo(
+    @SerializedName("id")
+    val id: String,
+
+    @SerializedName("qr_code_content")
+    val qrCodeContent: String
 )
 
 data class Address(
     @SerializedName("id") val id: String,
     @SerializedName("street") val street: String,
     @SerializedName("city") val city: String,
-    @SerializedName("country") val country: String
+    @SerializedName("country") val country: String,
+    @SerializedName("postal_code") val postalCode: String?
 )
 
-
-// --- Request/Response for Scan Operations (Unchanged) ---
+// --- Request/Response Models ---
 
 data class RefreshRequest(
     val refresh: String
 )
-
 
 data class ErrorResponse(
     @SerializedName("error") val error: String,
@@ -99,12 +155,18 @@ data class ArrivalScanResponse(
     val message: String
 )
 
-// Other models as needed, e.g., Waybill, Driver...
-// These are not directly used by the UI in the current scope but are here for completeness
-data class Waybill(
-    @SerializedName("id") val id: String,
-    @SerializedName("waybill_number") val waybillNumber: String,
-    @SerializedName("packages_qty") val packagesQty: Int
+data class CreateManifestRequest(
+    @SerializedName("is_direct_delivery_manifest") val isDirectDeliveryManifest: Boolean,
+    @SerializedName("driver_id") val driverId: String,
+    @SerializedName("origin_hub_id") val originHubId: String
+)
+
+data class AddWaybillRequest(
+    @SerializedName("qr_code_content") val qrCodeContent: String
+)
+
+data class MarkDeliveredRequest(
+    @SerializedName("qr_code_content") val qrCodeContent: String
 )
 
 data class Driver(

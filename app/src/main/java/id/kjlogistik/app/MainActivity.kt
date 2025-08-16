@@ -20,6 +20,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import id.kjlogistik.app.data.session.SessionManager
 import id.kjlogistik.app.presentation.screens.auth.LoginScreen
 import id.kjlogistik.app.presentation.screens.driver.DriverMainScreen
+import id.kjlogistik.app.presentation.screens.driver.InProgressRunScreen
+import id.kjlogistik.app.presentation.screens.driver.ScanToLoadScreen
 import id.kjlogistik.app.presentation.screens.warehouse.InboundScanManifestListScreen
 import id.kjlogistik.app.presentation.screens.warehouse.InboundScanScreen
 import id.kjlogistik.app.presentation.screens.warehouse.MainScreen
@@ -102,7 +104,15 @@ fun AppNavigation() {
 //            MainScreen(navController = navController)
 //        }
 
-        composable("main_screen") {
+        composable("scan_to_load_screen") {
+            ScanToLoadScreen(navController)
+        }
+        composable("in_progress_run_screen") {
+            InProgressRunScreen(navController)
+        }
+
+
+            composable("main_screen") {
             MainScreen(navController = navController, sessionManager = sessionManager)
         }
         composable("driver_main_screen") {

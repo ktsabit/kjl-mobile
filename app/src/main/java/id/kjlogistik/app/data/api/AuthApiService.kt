@@ -50,4 +50,43 @@ interface AuthApiService {
         @Path("id") manifestId: String,
         @Body request: ArrivalScanRequest
     ): Response<ArrivalScanResponse>
+
+
+    @POST("api/manifests/")
+    suspend fun createManifest(
+        @Header("Authorization") authToken: String,
+        @Body request: CreateManifestRequest
+    ): Response<Manifest>
+
+
+    @GET("api/manifests/{id}/")
+    suspend fun getManifestDetails(
+        @Header("Authorization") authToken: String,
+        @Path("id") manifestId: String
+    ): Response<Manifest>
+
+    @GET("api/waybills/")
+    suspend fun getWaybillsForManifest(
+        @Header("Authorization") authToken: String,
+        @Query("manifest_id") manifestId: String
+    ): Response<PaginatedWaybillResponse>
+
+    @POST("api/manifests/{id}/add-waybill/")
+    suspend fun addWaybillToManifest(
+        @Header("Authorization") authToken: String,
+        @Path("id") manifestId: String,
+        @Body request: AddWaybillRequest
+    ): Response<Waybill>
+
+    @POST("api/manifests/{id}/start-run/")
+    suspend fun startRun(
+        @Header("Authorization") authToken: String,
+        @Path("id") manifestId: String
+    ): Response<Unit>
+
+    @POST("api/packages/mark-delivered/")
+    suspend fun markPackageAsDelivered(
+        @Header("Authorization") authToken: String,
+        @Body request: MarkDeliveredRequest
+    ): Response<Unit>
 }
