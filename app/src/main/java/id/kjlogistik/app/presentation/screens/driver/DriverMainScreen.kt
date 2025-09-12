@@ -63,6 +63,7 @@ fun DriverMainScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     if (hasActiveRun) {
+                        // FIX: Pass nullable status safely
                         ContinueRunCard(navController, uiState.manifest?.status, uiState.isLoading)
                     } else {
                         StartNewRunCard(navController, driverViewModel, uiState.isLoading)
@@ -104,7 +105,7 @@ private fun StartNewRunCard(navController: NavController, viewModel: DriverViewM
             onClick = {
                 // This now correctly only creates a manifest when there is no active one.
                 viewModel.createManifest {
-                    navController.navigate("scan_to_load_screen")
+                    navController.navigate("pre_departure_verification_screen")
                 }
             },
             enabled = !isLoading,
@@ -150,11 +151,11 @@ private fun ContinueRunCard(navController: NavController, status: String?, isLoa
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = {
-                // This correctly navigates based on the status of the *existing* manifest.
-                val destination = if (status == "DRAFT") {
-                    "scan_to_load_screen"
-                } else {
-                    "in_progress_run_screen"
+                // FIX: Safely determine the destination based on status
+                val destination = when (status) {
+                    "DRAFT" -> "pre_departure_verification_screen"
+                    "OUT_FOR_DELIVERY" -> "in_progress_run_screen"
+                    else -> "driver_main_screen" // Fallback
                 }
                 navController.navigate(destination)
             },

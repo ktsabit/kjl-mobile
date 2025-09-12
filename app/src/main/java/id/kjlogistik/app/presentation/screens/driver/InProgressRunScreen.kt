@@ -1,25 +1,36 @@
 package id.kjlogistik.app.presentation.screens.driver
 
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import id.kjlogistik.app.presentation.viewmodels.driver.DriverViewModel
+import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
+private fun getPackageNumber(qrCodeContent: String): String {
+    return qrCodeContent.split(":").firstOrNull() ?: "N/A"
+}
+
+@OptIn( ExperimentalMaterial3Api::class)
 @Composable
 fun InProgressRunScreen(
     navController: NavController,
@@ -28,11 +39,31 @@ fun InProgressRunScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    val allPackagesDelivered = uiState.waybills.isNotEmpty() && uiState.deliveredWaybillIds.size == uiState.waybills.size
+    val totalWaybills = uiState.manifest?.waybills?.size ?: 0
+    val deliveredWaybillsCount = uiState.deliveredWaybillNumbers.size
+    val allWaybillsDelivered = totalWaybills > 0 && deliveredWaybillsCount == totalWaybills
+
+    val backgroundColor by animateColorAsState(
+        targetValue = if (uiState.isDuplicateDelivery) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f) else Color.Transparent,
+        label = "BackgroundColorAnimation"
+    )
+
+    LaunchedEffect(uiState.isDuplicateDelivery) {
+        if (uiState.isDuplicateDelivery) {
+            try {
+                val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+                toneGen.startTone(ToneGenerator.TONE_CDMA_PRESSHOLDKEY_LITE, 2000)
+                delay(2000)
+                toneGen.release()
+            } catch (e: Exception) { /* Ignore */ }
+        }
+    }
 
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            if (!uiState.isDuplicateDelivery) {
+                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            }
             viewModel.clearErrorMessage()
         }
     }
@@ -49,7 +80,7 @@ fun InProgressRunScreen(
             )
         },
         floatingActionButton = {
-            if (!allPackagesDelivered) {
+            if (!allWaybillsDelivered) {
                 ExtendedFloatingActionButton(
                     text = { Text("Scan Delivered Package") },
                     icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan Package") },
@@ -66,8 +97,10 @@ fun InProgressRunScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(backgroundColor)
                 .padding(paddingValues)
         ) {
+            // Overall Progress Card
             Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -77,7 +110,7 @@ fun InProgressRunScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            "${uiState.deliveredWaybillIds.size} of ${uiState.waybills.size} Delivered",
+                            "$deliveredWaybillsCount of $totalWaybills Waybills Delivered",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -85,31 +118,26 @@ fun InProgressRunScreen(
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(50.dp)) {
                         CircularProgressIndicator(
                             progress = {
-                                if (uiState.waybills.isEmpty()) 0f
-                                else uiState.deliveredWaybillIds.size.toFloat() / uiState.waybills.size.toFloat()
+                                if (totalWaybills == 0) 0f
+                                else deliveredWaybillsCount.toFloat() / totalWaybills.toFloat()
                             },
                             modifier = Modifier.fillMaxSize(),
                             strokeWidth = 4.dp
-                        )
-                        Text(
-                            text = "${((if (uiState.waybills.isEmpty()) 0.0 else uiState.deliveredWaybillIds.size.toDouble() / uiState.waybills.size.toDouble()) * 100).toInt()}%",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
-            if (allPackagesDelivered) {
+            if (allWaybillsDelivered) {
+                // Completion Screen
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
                         Icon(Icons.Default.CheckCircle, contentDescription = "Run Complete", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(80.dp))
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Run Complete!", style = MaterialTheme.typography.headlineMedium)
-                        Text("All packages have been marked as delivered.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("All waybills have been delivered.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(24.dp))
                         Button(onClick = {
-                            // --- THIS IS THE FIX ---
                             viewModel.completeRun()
                             navController.popBackStack()
                         }) {
@@ -118,32 +146,56 @@ fun InProgressRunScreen(
                     }
                 }
             } else {
+                // Grouped Package List
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(uiState.waybills) { waybill ->
-                        val isDelivered = uiState.deliveredWaybillIds.contains(waybill.id)
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            ListItem(
-                                colors = ListItemDefaults.colors(
-                                    containerColor = if(isDelivered) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant
-                                ),
-                                headlineContent = {
-                                    Text(waybill.waybillNumber ?: "Unknown Waybill", fontWeight = FontWeight.SemiBold)
-                                },
-                                supportingContent = { Text("Packages: ${waybill.packagesQty}") },
-                                trailingContent = {
-                                    if (isDelivered) {
-                                        Icon(Icons.Default.CheckCircle, contentDescription = "Delivered", tint = MaterialTheme.colorScheme.primary)
-                                    }
+                    items(uiState.manifest?.waybills ?: emptyList()) { waybillGroup ->
+                        val isWaybillComplete = uiState.deliveredWaybillNumbers.contains(waybillGroup.waybillNumber)
+                        OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                Text(
+                                    text = waybillGroup.waybillNumber,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isWaybillComplete) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                                waybillGroup.packages.forEach { pkg ->
+                                    PackageDeliveryItem(
+                                        packageNumber = getPackageNumber(pkg.qrCodeContent),
+                                        isDelivered = pkg.status == "DELIVERED"
+                                    )
                                 }
-                            )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PackageDeliveryItem(packageNumber: String, isDelivered: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            imageVector = if (isDelivered) Icons.Default.CheckCircle else Icons.Default.LocalShipping,
+            contentDescription = if (isDelivered) "Delivered" else "Out for Delivery",
+            tint = if (isDelivered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = "Package #$packageNumber",
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (isDelivered) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

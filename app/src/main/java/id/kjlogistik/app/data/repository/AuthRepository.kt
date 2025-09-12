@@ -1,5 +1,6 @@
 package id.kjlogistik.app.data.repository
 
+import com.google.gson.Gson
 import id.kjlogistik.app.data.api.AuthApiService
 import id.kjlogistik.app.data.model.*
 import id.kjlogistik.app.data.session.SessionManager
@@ -7,6 +8,7 @@ import retrofit2.HttpException
 import retrofit2.Response
 import javax.inject.Inject
 import java.io.IOException
+import id.kjlogistik.app.data.model.Package
 
 class AuthRepository @Inject constructor(
     private val authApiService: AuthApiService,
@@ -29,7 +31,7 @@ class AuthRepository @Inject constructor(
 
     sealed class ManifestScanResult {
         data class Success(val message: String) : ManifestScanResult()
-        data class Error(val message: String) : ManifestScanResult()
+        data class Error(val message: String, val isDuplicate: Boolean = false) : ManifestScanResult()
     }
 
     sealed class CreateManifestResult {
@@ -48,10 +50,9 @@ class AuthRepository @Inject constructor(
     }
 
     sealed class MarkDeliveredResult {
-        object Success : MarkDeliveredResult()
-        data class Error(val message: String) : MarkDeliveredResult()
+        data class Success(val response: MarkDeliveredResponse) : MarkDeliveredResult()
+        data class Error(val message: String, val isDuplicate: Boolean = false) : MarkDeliveredResult()
     }
-
     sealed class GetManifestResult {
         data class Success(val manifest: Manifest) : GetManifestResult()
         data class Error(val message: String) : GetManifestResult()
@@ -60,6 +61,11 @@ class AuthRepository @Inject constructor(
     sealed class GetWaybillsResult {
         data class Success(val waybills: List<Waybill>) : GetWaybillsResult()
         data class Error(val message: String) : GetWaybillsResult()
+    }
+
+    sealed class LoadPackageResult {
+        data class Success(val aPackage: Package) : LoadPackageResult()
+        data class Error(val message: String) : LoadPackageResult()
     }
 
 
@@ -168,10 +174,19 @@ class AuthRepository @Inject constructor(
         try {
             val request = MarkDeliveredRequest(qrCodeContent)
             val response = authApiService.markPackageAsDelivered("Bearer $authToken", request)
-            return if (response.isSuccessful) {
-                MarkDeliveredResult.Success
+
+            if (response.isSuccessful && response.body() != null) {
+                return MarkDeliveredResult.Success(response.body()!!)
             } else {
-                MarkDeliveredResult.Error("Failed to mark package as delivered: ${response.errorBody()?.string()}")
+                // THE FIX: Handle the 409 Conflict for duplicates
+                if (response.code() == 409) {
+                    val errorBody = response.errorBody()?.string()
+                    val parsedMessage = try {
+                        Gson().fromJson(errorBody, ApiErrorResponse::class.java)?.message ?: "Package already delivered."
+                    } catch (e: Exception) { "Package already delivered." }
+                    return MarkDeliveredResult.Error(parsedMessage, isDuplicate = true)
+                }
+                return MarkDeliveredResult.Error("Failed to mark package as delivered: ${response.errorBody()?.string()}")
             }
         } catch (e: Exception) {
             return MarkDeliveredResult.Error("An error occurred: ${e.message}")
@@ -237,26 +252,32 @@ class AuthRepository @Inject constructor(
 
     suspend fun pickupScanPackage(
         qrCodeContent: String,
-        isDamaged: Boolean,
-        locationHubId: String
+        isDamaged: Boolean
     ): ScanResult {
         val authToken = sessionManager.fetchAuthToken()
         if (authToken.isNullOrEmpty()) {
             return ScanResult.Error("Authentication token not found. Please log in.")
         }
         return try {
+            // First, get the current user's hub ID
+            val userResponse = authApiService.getUserMe("Bearer $authToken")
+            if (!userResponse.isSuccessful || userResponse.body()?.hub == null) {
+                return ScanResult.Error("Could not retrieve user's hub information.")
+            }
+            val hubId = userResponse.body()!!.hub!!
+
+            // Now, make the scan request with the retrieved hub ID
             val request = InboundScanRequest(
                 qrCodeContent = qrCodeContent,
                 isDamaged = isDamaged,
-                locationHubId = locationHubId
+                locationHubId = hubId
             )
-            val response = authApiService.pickupScanPackage("Bearer $authToken", request)
-            if (response.isSuccessful) {
-                val responseBody = response.body()
-                ScanResult.Success(responseBody?.message ?: "Scan successful.")
+            val scanResponse = authApiService.pickupScanPackage("Bearer $authToken", request)
+            if (scanResponse.isSuccessful) {
+                ScanResult.Success(scanResponse.body()?.message ?: "Scan successful.")
             } else {
-                val errorBody = response.errorBody()?.string()
-                ScanResult.Error("Scan failed: ${errorBody ?: response.message()}")
+                val errorBody = scanResponse.errorBody()?.string()
+                ScanResult.Error("Scan failed: ${errorBody ?: scanResponse.message()}")
             }
         } catch (e: HttpException) {
             ScanResult.Error("Network error during scan: ${e.code()} - ${e.message()}")
@@ -266,6 +287,7 @@ class AuthRepository @Inject constructor(
             ScanResult.Error("An unexpected error occurred during scan: ${e.message}")
         }
     }
+
 
     suspend fun getManifestsForDeparture(): ManifestListResult {
         val authToken = sessionManager.fetchAuthToken()
@@ -300,17 +322,29 @@ class AuthRepository @Inject constructor(
         if (authToken.isNullOrEmpty()) {
             return ManifestScanResult.Error("Authentication token not found. Please log in.")
         }
-        return try {
+
+        try {
             val request = DepartureScanRequest(qrCodeContent = qrCodeContent)
             val response = authApiService.departureScanPackage("Bearer $authToken", manifestId, request)
+
             if (response.isSuccessful) {
-                ManifestScanResult.Success(response.body()?.message ?: "Departure scan successful.")
+                return ManifestScanResult.Success(response.body()?.message ?: "Scan successful.")
             } else {
-                val errorBody = response.errorBody()?.string()
-                ManifestScanResult.Error("Departure scan failed: ${errorBody ?: response.message()}")
+                if (response.code() == 409) {
+                    val errorBody = response.errorBody()?.string()
+                    val parsedMessage = try {
+                        Gson().fromJson(errorBody, ApiErrorResponse::class.java)?.message ?: "Package already scanned."
+                    } catch (e: Exception) {
+                        "Package already scanned."
+                    }
+                    return ManifestScanResult.Error(parsedMessage, isDuplicate = true)
+                }
+                return ManifestScanResult.Error("Scan failed with code: ${response.code()}", isDuplicate = false)
             }
+        } catch (e: IOException) {
+            return ManifestScanResult.Error("Network error. Please check your connection.", isDuplicate = false)
         } catch (e: Exception) {
-            ManifestScanResult.Error("An error occurred: ${e.message}")
+            return ManifestScanResult.Error("An unexpected error occurred.", isDuplicate = false)
         }
     }
 
@@ -347,21 +381,50 @@ class AuthRepository @Inject constructor(
         if (authToken.isNullOrEmpty()) {
             return ManifestScanResult.Error("Authentication token not found. Please log in.")
         }
-        return try {
+        try {
             val request = ArrivalScanRequest(qrCodeContent = qrCodeContent)
             val response = authApiService.arrivalScanPackage("Bearer $authToken", manifestId, request)
             if (response.isSuccessful) {
-                ManifestScanResult.Success(response.body()?.message ?: "Arrival scan successful.")
+                return ManifestScanResult.Success(response.body()?.message ?: "Arrival scan successful.")
             } else {
-                val errorBody = response.errorBody()?.string()
-                ManifestScanResult.Error("Arrival scan failed: ${errorBody ?: response.message()}")
+                if (response.code() == 409) {
+                    val errorBody = response.errorBody()?.string()
+                    val parsedMessage = try {
+                        Gson().fromJson(errorBody, ApiErrorResponse::class.java)?.message ?: "Package already scanned for arrival."
+                    } catch (e: Exception) {
+                        "Package already scanned for arrival."
+                    }
+                    return ManifestScanResult.Error(parsedMessage, isDuplicate = true)
+                }
+                return ManifestScanResult.Error("Scan failed with code: ${response.code()}", isDuplicate = false)
             }
-        } catch (e: Exception) {
-            ManifestScanResult.Error("An error occurred: ${e.message}")
+        } catch (e: IOException) {
+            return ManifestScanResult.Error("Network error. Please check your connection.", isDuplicate = false)
+        }
+        catch (e: Exception) {
+            return ManifestScanResult.Error("An unexpected error occurred: ${e.message}")
         }
     }
 
     suspend fun getUserMe(authToken: String): Response<UserMeResponse> {
         return authApiService.getUserMe(authToken)
+    }
+
+    suspend fun loadPackage(manifestId: String, qrCodeContent: String): LoadPackageResult {
+        val authToken = sessionManager.fetchAuthToken()
+        if (authToken.isNullOrEmpty()) {
+            return LoadPackageResult.Error("Authentication token not found.")
+        }
+        return try {
+            val request = LoadPackageRequest(qrCodeContent)
+            val response = authApiService.loadPackage("Bearer $authToken", manifestId, request)
+            if (response.isSuccessful && response.body() != null) {
+                LoadPackageResult.Success(response.body()!!)
+            } else {
+                LoadPackageResult.Error("Failed to load package: ${response.errorBody()?.string()}")
+            }
+        } catch (e: Exception) {
+            LoadPackageResult.Error("An error occurred: ${e.message}")
+        }
     }
 }

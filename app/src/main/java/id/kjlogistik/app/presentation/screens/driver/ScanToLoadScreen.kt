@@ -32,12 +32,6 @@ fun ScanToLoadScreen(
 
     Log.d("ScanToLoadScreen", "uiState: $uiState")
 
-//    LaunchedEffect(Unit) {
-//        viewModel.createManifest { manifestId ->
-//            // Manifest is created, UI will update
-//        }
-//    }
-
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
@@ -116,7 +110,8 @@ fun ScanToLoadScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            uiState.manifest?.manifestNumber ?: "Creating...",
+                            // Use the correct field depending on what's available
+                            uiState.manifest?.manifestNumber ?: uiState.manifest?.manifestId ?: "Creating...",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )

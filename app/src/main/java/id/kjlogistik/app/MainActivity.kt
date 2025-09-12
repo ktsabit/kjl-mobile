@@ -21,6 +21,7 @@ import id.kjlogistik.app.data.session.SessionManager
 import id.kjlogistik.app.presentation.screens.auth.LoginScreen
 import id.kjlogistik.app.presentation.screens.driver.DriverMainScreen
 import id.kjlogistik.app.presentation.screens.driver.InProgressRunScreen
+import id.kjlogistik.app.presentation.screens.driver.PreDepartureVerificationScreen
 import id.kjlogistik.app.presentation.screens.driver.ScanToLoadScreen
 import id.kjlogistik.app.presentation.screens.warehouse.InboundScanManifestListScreen
 import id.kjlogistik.app.presentation.screens.warehouse.InboundScanScreen
@@ -112,7 +113,7 @@ fun AppNavigation() {
         }
 
 
-            composable("main_screen") {
+        composable("main_screen") {
             MainScreen(navController = navController, sessionManager = sessionManager)
         }
         composable("driver_main_screen") {
@@ -160,6 +161,9 @@ fun AppNavigation() {
                 totalPackages = backStackEntry.arguments?.getInt("totalPackages")!!,
                 scannedPackagesCount = backStackEntry.arguments?.getInt("arrivalScannedCount")!!
             )
+        }
+        composable("pre_departure_verification_screen") {
+            PreDepartureVerificationScreen(navController = navController)
         }
     }
 }

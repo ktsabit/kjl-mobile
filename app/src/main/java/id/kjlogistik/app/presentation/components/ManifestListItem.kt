@@ -15,10 +15,13 @@ import id.kjlogistik.app.data.model.Manifest
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManifestListItem(manifest: Manifest, onClick: () -> Unit) {
+    // FIX: Handle nullable properties by providing default values.
     val isArrival = manifest.status == "IN_TRANSIT"
-    val scannedCount = if (isArrival) manifest.arrivalScannedCount else manifest.scannedPackagesCount
+    val scannedCount = (if (isArrival) manifest.arrivalScannedCount else manifest.scannedPackagesCount) ?: 0
+    val totalPackages = manifest.totalPackages ?: 0
+
     val progress by animateFloatAsState(
-        targetValue = if (manifest.totalPackages > 0) scannedCount.toFloat() / manifest.totalPackages.toFloat() else 0f,
+        targetValue = if (totalPackages > 0) scannedCount.toFloat() / totalPackages.toFloat() else 0f,
         label = "ManifestProgress"
     )
 
@@ -41,7 +44,7 @@ fun ManifestListItem(manifest: Manifest, onClick: () -> Unit) {
             ) {
                 // Destination City: Primary information, large and bold
                 Text(
-                    text = manifest.destinationHub.address?.city ?: manifest.destinationHub.name,
+                    text = manifest.destinationHub?.address?.city ?: manifest.destinationHub?.name ?: "Unknown Destination",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -76,7 +79,7 @@ fun ManifestListItem(manifest: Manifest, onClick: () -> Unit) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "/ ${manifest.totalPackages}",
+                        text = "/ $totalPackages",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

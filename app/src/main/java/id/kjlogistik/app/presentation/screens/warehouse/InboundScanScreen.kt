@@ -1,7 +1,11 @@
 package id.kjlogistik.app.presentation.screens.warehouse
 
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -11,26 +15,49 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
-import id.kjlogistik.app.presentation.viewmodels.warehouse.InboundScanPackageViewModel // Change ViewModel for the other screen
+import id.kjlogistik.app.presentation.viewmodels.warehouse.InboundScanPackageViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InboundScanScreen( // Change function name for the other screen
+fun InboundScanScreen(
     navController: NavController,
     manifestId: String,
     manifestNumber: String,
     totalPackages: Int,
     scannedPackagesCount: Int,
-    viewModel: InboundScanPackageViewModel = hiltViewModel() // Change ViewModel
+    viewModel: InboundScanPackageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    // Background color animation for error state
+    val backgroundColor by animateColorAsState(
+        targetValue = if (uiState.isDuplicateScan) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f) else Color.Transparent,
+        label = "BackgroundColorAnimation"
+    )
+
+    // Audio cue for duplicate scan
+    LaunchedEffect(uiState.isDuplicateScan) {
+        if (uiState.isDuplicateScan) {
+            try {
+                val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+                toneGen.startTone(ToneGenerator.TONE_CDMA_PRESSHOLDKEY_LITE, 2000)
+                delay(2000)
+                toneGen.release()
+            } catch (e: Exception) {
+                // Handle exceptions
+            }
+        }
+    }
+
 
     LaunchedEffect(Unit) {
         viewModel.setManifestDetails(manifestId, manifestNumber, totalPackages, scannedPackagesCount)
@@ -39,8 +66,10 @@ fun InboundScanScreen( // Change function name for the other screen
     LaunchedEffect(uiState.scanSuccessMessage, uiState.errorMessage, uiState.finalAlertMessage) {
         val message = uiState.scanSuccessMessage ?: uiState.errorMessage ?: uiState.finalAlertMessage
         message?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearMessages() // Clear message after showing
+            if (!uiState.isDuplicateScan) { // Don't show toast for duplicate scan
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            }
+            viewModel.clearMessages()
         }
     }
 
@@ -52,7 +81,7 @@ fun InboundScanScreen( // Change function name for the other screen
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Arrival Scan") }, // Change title
+                title = { Text("Arrival Scan") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -80,7 +109,11 @@ fun InboundScanScreen( // Change function name for the other screen
         floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundColor)
+                .padding(paddingValues)
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

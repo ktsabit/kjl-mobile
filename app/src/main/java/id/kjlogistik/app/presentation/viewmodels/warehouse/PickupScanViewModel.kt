@@ -103,17 +103,10 @@ class PickupScanViewModel @Inject constructor(
                     return@launch
                 }
 
-
-
-                val currentHubId = authRepository.getUserMe("Bearer $authToken");
-
-                Log.d("PickupScanViewModel", "Current Hub ID: ${currentHubId.body()}")
-
-
+                // FIX: Removed the locationHubId parameter to match the updated repository function
                 when (val result = authRepository.pickupScanPackage(
                     qrCodeContent = scannedQrCodeContent,
-                    isDamaged = isDamaged,
-                    locationHubId = currentHubId.body()?.hub ?: ""
+                    isDamaged = isDamaged
                 )) {
                     is AuthRepository.ScanResult.Success -> {
                         _uiState.value = _uiState.value.copy(

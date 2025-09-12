@@ -59,7 +59,7 @@ interface AuthApiService {
     ): Response<Manifest>
 
 
-    @GET("api/manifests/{id}/")
+    @GET("api/manifests/{id}/verification/")
     suspend fun getManifestDetails(
         @Header("Authorization") authToken: String,
         @Path("id") manifestId: String
@@ -88,5 +88,12 @@ interface AuthApiService {
     suspend fun markPackageAsDelivered(
         @Header("Authorization") authToken: String,
         @Body request: MarkDeliveredRequest
-    ): Response<Unit>
+    ): Response<MarkDeliveredResponse>
+
+    @POST("api/manifests/{id}/load-package/")
+    suspend fun loadPackage(
+        @Header("Authorization") authToken: String,
+        @Path("id") manifestId: String,
+        @Body request: LoadPackageRequest
+    ): Response<Package>
 }
