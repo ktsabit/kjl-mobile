@@ -19,8 +19,8 @@ import id.kjlogistik.app.data.api.TokenAuthenticator
 // IMPORTANT: Replace with your actual Cloudflared tunnel URL.
 // This is critical for your physical device to connect.
 // Example: "https://my-warehouse-api.trycloudflare.com/"
-//const val BASE_URL = "https://api.kjlogistik.id/" // <--- UPDATE THIS!
-const val BASE_URL = "https://dev-api.kaisan.dev/" // <--- UPDATE THIS!
+const val BASE_URL = "https://api.kjlogistik.id/" // <--- UPDATE THIS!
+//const val BASE_URL = "https://dev-api.kaisan.dev/" // <--- UPDATE THIS!
 
 @Module
 @InstallIn(SingletonComponent::class) // This module's dependencies live as long as the application
