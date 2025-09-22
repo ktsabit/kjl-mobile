@@ -1,6 +1,8 @@
 package id.kjlogistik.app.data.repository
 
+import android.content.Context
 import com.google.gson.Gson
+import dagger.hilt.android.qualifiers.ApplicationContext
 import id.kjlogistik.app.data.api.AuthApiService
 import id.kjlogistik.app.data.model.*
 import id.kjlogistik.app.data.session.SessionManager
@@ -9,10 +11,12 @@ import retrofit2.Response
 import javax.inject.Inject
 import java.io.IOException
 import id.kjlogistik.app.data.model.Package
+import id.kjlogistik.app.R
 
 class AuthRepository @Inject constructor(
     private val authApiService: AuthApiService,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    @ApplicationContext private val context: Context
 ) {
 
     sealed class LoginResult {
@@ -67,6 +71,33 @@ class AuthRepository @Inject constructor(
         data class Success(val aPackage: Package) : LoadPackageResult()
         data class Error(val message: String) : LoadPackageResult()
     }
+
+    sealed class VersionCheckResult {
+        data class Success(val response: AppVersionResponse) : VersionCheckResult()
+        data class Error(val message: String) : VersionCheckResult()
+    }
+
+
+    suspend fun checkAppVersion(): VersionCheckResult {
+        // Replace with your actual username and repo name
+        val versionUrl = "https://raw.githubusercontent.com/ktsabit/kjl-app-config/refs/heads/main/version.json"
+
+        // Replace with your actual GitHub PAT
+        val token = context.getString(R.string.github_pat)
+        val githubToken = "Bearer $token"
+
+        return try {
+            val response = authApiService.getLatestAppVersion(versionUrl, githubToken)
+            if (response.isSuccessful && response.body() != null) {
+                VersionCheckResult.Success(response.body()!!)
+            } else {
+                VersionCheckResult.Error("Failed to check version: ${response.code()} ${response.message()}")
+            }
+        } catch (e: Exception) {
+            VersionCheckResult.Error("An error occurred: ${e.message}")
+        }
+    }
+
 
 
     suspend fun getManifestDetails(manifestId: String): GetManifestResult {

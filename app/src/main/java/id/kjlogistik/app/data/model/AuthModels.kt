@@ -64,6 +64,12 @@ data class LoginResponse(
     @SerializedName("access") val accessToken: String
 )
 
+data class AppVersionResponse(
+    @SerializedName("latest_version") val latestVersion: String,
+    @SerializedName("is_force_update") val isForceUpdate: Boolean,
+    @SerializedName("update_url") val updateUrl: String?
+)
+
 data class UserMeResponse(
     @SerializedName("id") val id: String,
     @SerializedName("email") val email: String,

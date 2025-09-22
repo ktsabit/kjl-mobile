@@ -1,9 +1,31 @@
+import java.io.FileInputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
+fun getCalVer(): Pair<Int, String> {
+    val date = Date()
+    val year = SimpleDateFormat("yy").format(date).toInt()
+    val month = SimpleDateFormat("MM").format(date).toInt()
+    val day = SimpleDateFormat("dd").format(date).toInt()
+    val sequence = 0 // This can be incremented for multiple builds on the same day
+    val versionCode = (year * 1000000) + (month * 10000) + (day * 100) + sequence
+    val versionName = "v$year.$month.$day.$sequence"
+    return Pair(versionCode, versionName)
 }
 
 android {
@@ -14,8 +36,14 @@ android {
         applicationId = "id.kjlogistik.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        val (calVerCode, calVerName) = getCalVer()
+        versionCode = calVerCode
+        versionName = calVerName
+
+        resValue("string", "app_version_name", versionName!!)
+
+        val githubToken = localProperties.getProperty("GITHUB_TOKEN") ?: ""
+        resValue("string", "github_pat", githubToken)
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -38,6 +66,7 @@ android {
     }
     buildFeatures {
         compose = true
+//        buildConfig = true
     }
 }
 

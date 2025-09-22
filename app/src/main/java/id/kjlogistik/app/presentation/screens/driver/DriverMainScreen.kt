@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,7 +27,7 @@ fun DriverMainScreen(
 ) {
     val uiState by driverViewModel.uiState.collectAsState()
 
-    // This recomposes the screen whenever you navigate back to it,
+    // Recomposes the screen whenever navigating back to it,
     // ensuring the check for an active run is always fresh.
     LaunchedEffect(navController.currentBackStackEntry) {
         driverViewModel.checkForActiveRun()
@@ -38,15 +39,13 @@ fun DriverMainScreen(
                 title = { Text("Driver Dashboard") },
                 actions = {
                     IconButton(onClick = {
-                        sessionManager.clearAuthToken()
-                        navController.navigate("login_screen") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                        }
+                        navController.navigate("profile_screen")
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
                 }
             )
+
         }
     ) { paddingValues ->
         Box(

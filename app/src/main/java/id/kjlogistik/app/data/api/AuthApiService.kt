@@ -6,6 +6,12 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface AuthApiService {
+
+    @GET
+    suspend fun getLatestAppVersion(
+        @Url url: String,
+        @Header("Authorization") token: String
+    ): Response<AppVersionResponse>
     @POST("auth/jwt/create")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 

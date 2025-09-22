@@ -6,10 +6,18 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -19,6 +27,7 @@ import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import id.kjlogistik.app.data.session.SessionManager
 import id.kjlogistik.app.presentation.screens.auth.LoginScreen
+import id.kjlogistik.app.presentation.screens.auth.ProfileScreen
 import id.kjlogistik.app.presentation.screens.driver.DriverMainScreen
 import id.kjlogistik.app.presentation.screens.driver.InProgressRunScreen
 import id.kjlogistik.app.presentation.screens.driver.PreDepartureVerificationScreen
@@ -30,6 +39,7 @@ import id.kjlogistik.app.presentation.screens.warehouse.OutboundScanManifestList
 import id.kjlogistik.app.presentation.screens.warehouse.OutboundScanScreen
 import id.kjlogistik.app.presentation.screens.warehouse.PickupScanScreen
 import id.kjlogistik.app.presentation.theme.KJLAppTheme
+import id.kjlogistik.app.presentation.viewmodels.AppUpdateViewModel
 import id.kjlogistik.app.presentation.viewmodels.auth.LoginViewModel
 import javax.inject.Inject
 
@@ -53,7 +63,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    // Retrieve the sessionManager instance that was injected into MainActivity
+    val updateViewModel: AppUpdateViewModel = hiltViewModel()
+    val updateState by updateViewModel.updateState.collectAsState()
+    val uriHandler = LocalUriHandler.current
     val sessionManager: SessionManager = hiltViewModel<LoginViewModel>().sessionManager
 
     val authToken = sessionManager.fetchAuthToken()
@@ -61,13 +73,27 @@ fun AppNavigation() {
 
 
     val startDestination = if (authToken != null && userGroups.isNotEmpty()) {
-        if (userGroups.contains("Driver")) {
-            "driver_main_screen"
-        } else {
-            "main_screen"
-        }
+        if (userGroups.contains("Driver")) "driver_main_screen" else "main_screen"
     } else {
         "login_screen"
+    }
+
+    LaunchedEffect(Unit) {
+        updateViewModel.checkForUpdates()
+    }
+
+    if (updateState.showUpdateDialog) {
+        UpdateDialog(
+            isForceUpdate = updateState.isForceUpdate,
+            onUpdateClick = {
+                updateState.updateUrl?.let { uriHandler.openUri(it) }
+            },
+            onDismiss = {
+                if (!updateState.isForceUpdate) {
+                    updateViewModel.dismissUpdateDialog()
+                }
+            }
+        )
     }
 
 
@@ -165,5 +191,34 @@ fun AppNavigation() {
         composable("pre_departure_verification_screen") {
             PreDepartureVerificationScreen(navController = navController)
         }
+        composable("profile_screen") {
+            ProfileScreen(navController)
+        }
+
     }
+}
+
+@Composable
+fun UpdateDialog(
+    isForceUpdate: Boolean,
+    onUpdateClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("Update Available") },
+        text = { Text("A new version of the app is available. Please update to continue.") },
+        confirmButton = {
+            Button(onClick = onUpdateClick) {
+                Text("Update Now")
+            }
+        },
+        dismissButton = {
+            if (!isForceUpdate) {
+                TextButton(onClick = onDismiss) {
+                    Text("Later")
+                }
+            }
+        }
+    )
 }

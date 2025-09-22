@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -39,15 +40,13 @@ fun MainScreen(
                 title = { Text("Warehouse Dashboard") },
                 actions = {
                     IconButton(onClick = {
-                        sessionManager.clearAuthToken()
-                        navController.navigate("login_screen") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                        }
+                        navController.navigate("profile_screen")
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
                 }
             )
+
         }
     ) { paddingValues ->
         LazyVerticalGrid(
