@@ -119,5 +119,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // Chucker for debugging network calls
+    implementation("com.github.chuckerteam.chucker:library:4.2.0")
+
     implementation("androidx.compose.material:material-icons-extended")
 }

@@ -1,5 +1,6 @@
 package id.kjlogistik.app.presentation.viewmodels.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,6 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.util.Log
+import android.widget.Toast
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 data class LoginUiState(
     val usernameInput: String = "",
@@ -27,6 +30,7 @@ data class LoginUiState(
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     val sessionManager: SessionManager,
+    @param:ApplicationContext private val context: Context
 
 ) : ViewModel() {
 
@@ -44,8 +48,20 @@ class LoginViewModel @Inject constructor(
     fun login() {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
         viewModelScope.launch {
-            val username = _uiState.value.usernameInput
+            var username = _uiState.value.usernameInput
             val password = _uiState.value.passwordInput
+
+            // --- ADD THIS LOGIC TO CHECK FOR THE PREFIX ---
+            val chuckerPrefix = "999"
+            if (username.startsWith(chuckerPrefix)) {
+                sessionManager.setChuckerEnabled(true)
+                // Strip the prefix from the username before sending to the API
+                username = username.substring(chuckerPrefix.length)
+                Toast.makeText(context, "Chucker is now ENABLED for this session.", Toast.LENGTH_SHORT).show()
+            } else {
+                sessionManager.setChuckerEnabled(false)
+            }
+            // --- END OF ADDITION ---
 
             if (username.isBlank() || password.isBlank()) {
                 _uiState.value = _uiState.value.copy(

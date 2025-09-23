@@ -1,8 +1,11 @@
 package id.kjlogistik.app
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,8 +52,27 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var sessionManager: SessionManager
 
+    // --- ADD THIS PERMISSION LAUNCHER ---
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        // You can handle the case where the user denies the permission,
+        // but for Chucker it will just mean no notifications will show.
+    }
+
+    private fun askNotificationPermission() {
+        // This is only required for API level 33+ (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    // --- END OF ADDITION ---
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // --- CALL THE PERMISSION REQUEST HERE ---
+        askNotificationPermission()
+        // --- END OF CALL ---
+
         setContent {
             KJLAppTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -73,7 +95,11 @@ fun AppNavigation() {
 
 
     val startDestination = if (authToken != null && userGroups.isNotEmpty()) {
-        if (userGroups.contains("Driver")) "driver_main_screen" else "main_screen"
+        if (userGroups.contains("Driver")) {
+            "driver_main_screen"
+        } else {
+            "main_screen"
+        }
     } else {
         "login_screen"
     }

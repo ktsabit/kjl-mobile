@@ -12,12 +12,23 @@ class SessionManager @Inject constructor(
 
     companion object {
         const val PREFS_NAME = "auth_prefs"
+        const val KEY_CHUCKER_ENABLED = "chucker_enabled" // <-- ADD THIS
         const val KEY_AUTH_TOKEN = "access_token"
         const val KEY_REFRESH_TOKEN = "refresh_token"
         const val KEY_USER_GROUPS = "user_groups"
         // Key for persisting the active manifest
         const val KEY_ACTIVE_MANIFEST_ID = "active_manifest_id"
     }
+
+    // --- ADD THESE NEW FUNCTIONS FOR CHUCKER ---
+    fun setChuckerEnabled(isEnabled: Boolean) {
+        prefs.edit { putBoolean(KEY_CHUCKER_ENABLED, isEnabled) }
+    }
+
+    fun isChuckerEnabled(): Boolean {
+        return prefs.getBoolean(KEY_CHUCKER_ENABLED, false)
+    }
+    // --- END OF ADDITION ---
 
     fun saveAuthToken(token: String, refreshToken: String) {
         prefs.edit {
@@ -67,6 +78,8 @@ class SessionManager @Inject constructor(
             remove(KEY_REFRESH_TOKEN)
             // Also clear the manifest ID on logout
             remove(KEY_ACTIVE_MANIFEST_ID)
+            remove(KEY_CHUCKER_ENABLED) // <-- Also clear the flag on logout
+
         }
     }
 }
