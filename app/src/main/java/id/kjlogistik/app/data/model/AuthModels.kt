@@ -5,7 +5,10 @@ import com.google.gson.annotations.SerializedName
 // --- Data class for the new grouped structure ---
 data class WaybillGroup(
     @SerializedName("waybill_number") val waybillNumber: String,
-    @SerializedName("packages") val packages: List<Package>
+    @SerializedName("packages") val packages: List<Package>,
+    @SerializedName("sender_name") val senderName: String,
+    @SerializedName("recipient_name") val recipientName: String,
+    @SerializedName("recipient_city") val recipientCity: String
 )
 
 // --- Updated Manifest to use the new structure ---

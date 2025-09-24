@@ -9,14 +9,21 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.PersonPin
+import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -140,6 +147,10 @@ fun PreDepartureVerificationScreen(
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    DetailRow(icon = Icons.Outlined.Person, label = "Sender", value = waybillGroup.senderName)
+                                    DetailRow(icon = Icons.Outlined.PersonPin, label = "Recipient", value = waybillGroup.recipientName)
+                                    DetailRow(icon = Icons.Outlined.Place, label = "Destination", value = waybillGroup.recipientCity)
                                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                                     waybillGroup.packages.forEach { pkg ->
                                         PackageListItem(
@@ -156,6 +167,34 @@ fun PreDepartureVerificationScreen(
         }
     }
 }
+
+@Composable
+private fun DetailRow(icon: ImageVector, label: String, value: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 2.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = buildAnnotatedString {
+                withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)) {
+                    append("$label: ")
+                }
+                withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
+                    append(value)
+                }
+            },
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
 
 @Composable
 private fun PackageListItem(packageNumber: String, isScanned: Boolean) {
