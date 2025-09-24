@@ -13,13 +13,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import id.kjlogistik.app.presentation.components.ManifestListItem
-import id.kjlogistik.app.presentation.viewmodels.warehouse.InboundScanViewModel
+import id.kjlogistik.app.presentation.viewmodels.warehouse.ArrivalScanViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InboundScanManifestListScreen( // Change function name for the other screen
+fun ArrivalScanManifestListScreen( // Change function name for the other screen
     navController: NavController,
-    viewModel: InboundScanViewModel = hiltViewModel() // Change ViewModel for the other screen
+    viewModel: ArrivalScanViewModel = hiltViewModel() // Change ViewModel for the other screen
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -63,7 +63,7 @@ fun InboundScanManifestListScreen( // Change function name for the other screen
                             ManifestListItem(manifest) {
                                 // Your navigation logic remains the same
                                 navController.navigate(
-                                    "inbound_scan_screen/" + // Change route for the other screen
+                                    "arrival_scan_screen/" + // Change route for the other screen
                                             "${manifest.id}/" +
                                             "${manifest.manifestNumber}/" +
                                             "${manifest.totalPackages}/" +

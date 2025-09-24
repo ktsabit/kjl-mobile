@@ -22,18 +22,18 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
-import id.kjlogistik.app.presentation.viewmodels.warehouse.InboundScanPackageViewModel
+import id.kjlogistik.app.presentation.viewmodels.warehouse.ArrivalScanPackageViewModel
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InboundScanScreen(
+fun ArrivalScanScreen(
     navController: NavController,
     manifestId: String,
     manifestNumber: String,
     totalPackages: Int,
     scannedPackagesCount: Int,
-    viewModel: InboundScanPackageViewModel = hiltViewModel()
+    viewModel: ArrivalScanPackageViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current

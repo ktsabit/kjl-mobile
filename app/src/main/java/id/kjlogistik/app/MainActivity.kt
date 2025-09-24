@@ -35,8 +35,8 @@ import id.kjlogistik.app.presentation.screens.driver.DriverMainScreen
 import id.kjlogistik.app.presentation.screens.driver.InProgressRunScreen
 import id.kjlogistik.app.presentation.screens.driver.PreDepartureVerificationScreen
 import id.kjlogistik.app.presentation.screens.driver.ScanToLoadScreen
-import id.kjlogistik.app.presentation.screens.warehouse.InboundScanManifestListScreen
-import id.kjlogistik.app.presentation.screens.warehouse.InboundScanScreen
+import id.kjlogistik.app.presentation.screens.warehouse.ArrivalScanManifestListScreen
+import id.kjlogistik.app.presentation.screens.warehouse.ArrivalScanScreen
 import id.kjlogistik.app.presentation.screens.warehouse.MainScreen
 import id.kjlogistik.app.presentation.screens.warehouse.OutboundScanManifestListScreen
 import id.kjlogistik.app.presentation.screens.warehouse.OutboundScanScreen
@@ -194,11 +194,11 @@ fun AppNavigation() {
                 scannedPackagesCount = backStackEntry.arguments?.getInt("scannedPackagesCount")!!
             )
         }
-        composable("inbound_scan_manifest_list_screen") {
-            InboundScanManifestListScreen(navController)
+        composable("arrival_scan_manifest_list_screen") {
+            ArrivalScanManifestListScreen(navController)
         }
         composable(
-            "inbound_scan_screen/{manifestId}/{manifestNumber}/{totalPackages}/{scannedPackagesCount}",
+            "arrival_scan_screen/{manifestId}/{manifestNumber}/{totalPackages}/{scannedPackagesCount}",
             arguments = listOf(
                 navArgument("manifestId") { type = NavType.StringType },
                 navArgument("manifestNumber") { type = NavType.StringType },
@@ -206,7 +206,7 @@ fun AppNavigation() {
                 navArgument("scannedPackagesCount") { type = NavType.IntType }
             )
         ) { backStackEntry ->
-            InboundScanScreen(
+            ArrivalScanScreen(
                 navController = navController,
                 manifestId = backStackEntry.arguments?.getString("manifestId")!!,
                 manifestNumber = backStackEntry.arguments?.getString("manifestNumber")!!,

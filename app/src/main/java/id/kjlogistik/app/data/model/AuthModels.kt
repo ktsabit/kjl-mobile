@@ -147,13 +147,13 @@ data class ErrorResponse(
     @SerializedName("message") val message: String? = null
 )
 
-data class InboundScanRequest(
+data class PickupScanRequest(
     @SerializedName("qr_code_content") val qrCodeContent: String,
     @SerializedName("is_damaged") val isDamaged: Boolean = false,
     @SerializedName("location_hub_id") val locationHubId: String,
 )
 
-data class InboundScanResponse(
+data class PickupScanResponse(
     @SerializedName("message") val message: String,
     @SerializedName("status") val status: String,
     @SerializedName("timestamp") val timestamp: String? = null

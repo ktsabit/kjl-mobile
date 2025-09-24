@@ -11,19 +11,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class InboundScanUiState(
+data class ArrivalScanUiState(
     val manifests: List<Manifest> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
 
 @HiltViewModel
-class InboundScanViewModel @Inject constructor(
+class ArrivalScanViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(InboundScanUiState())
-    val uiState: StateFlow<InboundScanUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ArrivalScanUiState())
+    val uiState: StateFlow<ArrivalScanUiState> = _uiState.asStateFlow()
 
     fun fetchArrivalManifests() {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)

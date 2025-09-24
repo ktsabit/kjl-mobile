@@ -23,11 +23,11 @@ interface AuthApiService {
         @Header("Authorization") authToken: String
     ): Response<UserMeResponse>
 
-    @POST("api/packages/inbound-scan/")
+    @POST("api/packages/pickup-scan/")
     suspend fun pickupScanPackage(
         @Header("Authorization") authToken: String,
-        @Body request: InboundScanRequest
-    ): Response<InboundScanResponse>
+        @Body request: PickupScanRequest
+    ): Response<PickupScanResponse>
 
     @GET("api/manifests/")
     suspend fun getManifestsForDeparture(

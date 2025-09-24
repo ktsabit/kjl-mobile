@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import id.kjlogistik.app.presentation.components.ManifestListItem
-import id.kjlogistik.app.presentation.viewmodels.warehouse.OutboundScanViewModel // Change to InboundScanViewModel for the other screen
+import id.kjlogistik.app.presentation.viewmodels.warehouse.OutboundScanViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

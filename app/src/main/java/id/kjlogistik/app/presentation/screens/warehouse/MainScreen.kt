@@ -29,9 +29,9 @@ fun MainScreen(
     sessionManager: SessionManager = hiltViewModel<LoginViewModel>().sessionManager
 ) {
     val menuItems = listOf(
-        ScanMenuItem("Pickup Scan", Icons.Default.QrCodeScanner, "pickup_scan_screen"),
+        ScanMenuItem("Scan Pickup", Icons.Default.QrCodeScanner, "pickup_scan_screen"),
         ScanMenuItem("Outbound Scan", Icons.Default.ArrowUpward, "outbound_scan_manifest_list_screen"),
-        ScanMenuItem("Inbound Scan", Icons.Default.ArrowDownward, "inbound_scan_manifest_list_screen")
+        ScanMenuItem("Scan Kedatangan", Icons.Default.ArrowDownward, "arrival_scan_manifest_list_screen")
     )
 
     Scaffold(

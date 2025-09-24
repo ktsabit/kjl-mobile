@@ -298,7 +298,7 @@ class AuthRepository @Inject constructor(
             val hubId = userResponse.body()!!.hub!!
 
             // Now, make the scan request with the retrieved hub ID
-            val request = InboundScanRequest(
+            val request = PickupScanRequest(
                 qrCodeContent = qrCodeContent,
                 isDamaged = isDamaged,
                 locationHubId = hubId

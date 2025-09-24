@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class InboundScanPackageUiState(
+data class ArrivalScanPackageUiState(
     val manifestId: String = "",
     val manifestNumber: String = "",
     val totalPackages: Int = 0,
@@ -24,11 +24,11 @@ data class InboundScanPackageUiState(
 )
 
 @HiltViewModel
-class InboundScanPackageViewModel @Inject constructor(
+class ArrivalScanPackageViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(InboundScanPackageUiState())
-    val uiState: StateFlow<InboundScanPackageUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(ArrivalScanPackageUiState())
+    val uiState: StateFlow<ArrivalScanPackageUiState> = _uiState.asStateFlow()
 
     fun setManifestDetails(manifestId: String, manifestNumber: String, totalPackages: Int, scannedPackagesCount: Int) {
         _uiState.value = _uiState.value.copy(
