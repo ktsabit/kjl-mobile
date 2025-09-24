@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import id.kjlogistik.app.data.repository.AuthRepository
+import id.kjlogistik.app.util.BarcodeScannerUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,10 +26,23 @@ data class ArrivalScanPackageUiState(
 
 @HiltViewModel
 class ArrivalScanPackageViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val barcodeScannerUtil: BarcodeScannerUtil
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ArrivalScanPackageUiState())
     val uiState: StateFlow<ArrivalScanPackageUiState> = _uiState.asStateFlow()
+
+    fun startScanner() {
+        viewModelScope.launch {
+            val result = barcodeScannerUtil.scanBarcode()
+            result.onSuccess {
+                scanPackage(it)
+            }.onFailure {
+                handleScanFailure("Scan failed: ${it.message}")
+            }
+        }
+    }
+
 
     fun setManifestDetails(manifestId: String, manifestNumber: String, totalPackages: Int, scannedPackagesCount: Int) {
         _uiState.value = _uiState.value.copy(
