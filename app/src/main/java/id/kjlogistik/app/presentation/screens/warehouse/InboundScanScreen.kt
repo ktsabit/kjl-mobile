@@ -24,6 +24,8 @@ import androidx.navigation.NavController
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import id.kjlogistik.app.presentation.viewmodels.warehouse.InboundScanPackageViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +39,7 @@ fun InboundScanScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope() //
 
     // Background color animation for error state
     val backgroundColor by animateColorAsState(
@@ -97,10 +100,10 @@ fun InboundScanScreen(
                         Toast.makeText(context, "Manifest is complete.", Toast.LENGTH_SHORT).show()
                         return@ExtendedFloatingActionButton
                     }
-                    val scanner = GmsBarcodeScanning.getClient(context)
-                    scanner.startScan()
-                        .addOnSuccessListener { barcode -> barcode.rawValue?.let(viewModel::scanPackage) }
-                        .addOnFailureListener { e -> viewModel.handleScanFailure("Scan failed: ${e.message}") }
+                    coroutineScope.launch {
+                        viewModel.startScanner()
+                    }
+
                 },
                 text = { Text(if (isComplete) "Complete" else "Scan Package") },
                 icon = { Icon(if (isComplete) Icons.Default.Check else Icons.Default.QrCodeScanner, contentDescription = null) },

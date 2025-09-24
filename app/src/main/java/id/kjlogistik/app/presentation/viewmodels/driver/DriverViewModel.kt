@@ -11,6 +11,7 @@ import id.kjlogistik.app.data.model.Manifest
 import id.kjlogistik.app.data.model.Waybill
 import id.kjlogistik.app.data.repository.AuthRepository
 import id.kjlogistik.app.data.session.SessionManager
+import id.kjlogistik.app.util.BarcodeScannerUtil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +35,8 @@ data class DriverUiState(
 class DriverViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val barcodeScannerUtil: BarcodeScannerUtil
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DriverUiState())
@@ -195,18 +197,31 @@ class DriverViewModel @Inject constructor(
         }
     }
 
+//    fun startScanner(onScanResult: (String) -> Unit) {
+//        val scanner = GmsBarcodeScanning.getClient(context)
+//        scanner.startScan()
+//            .addOnSuccessListener { barcode ->
+//                barcode.rawValue?.let {
+//                    onScanResult(it)
+//                }
+//            }
+//            .addOnFailureListener { e ->
+//                _uiState.value = _uiState.value.copy(errorMessage = "Scan failed: ${e.message}")
+//            }
+//    }
+
     fun startScanner(onScanResult: (String) -> Unit) {
-        val scanner = GmsBarcodeScanning.getClient(context)
-        scanner.startScan()
-            .addOnSuccessListener { barcode ->
-                barcode.rawValue?.let {
-                    onScanResult(it)
-                }
+        viewModelScope.launch {
+            val result = barcodeScannerUtil.scanBarcode()
+            result.onSuccess {
+                onScanResult(it)
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(errorMessage = "Scan failed: ${it.message}")
             }
-            .addOnFailureListener { e ->
-                _uiState.value = _uiState.value.copy(errorMessage = "Scan failed: ${e.message}")
-            }
+        }
     }
+
+
 
     fun completeRun() {
         sessionManager.clearActiveManifestId()
